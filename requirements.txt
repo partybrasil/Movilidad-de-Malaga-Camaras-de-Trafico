@@ -1,0 +1,15 @@
+# Dependencias del proyecto Movilidad de Málaga - Cámaras de Tráfico
+# Python 3.10+
+
+# Framework GUI
+PySide6>=6.6.0
+
+# Procesamiento de datos
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Manejo de solicitudes HTTP
+requests>=2.31.0
+
+# Opcional: Para mejor manejo de imágenes
+Pillow>=10.0.0
