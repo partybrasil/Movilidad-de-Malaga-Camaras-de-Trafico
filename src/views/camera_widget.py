@@ -29,17 +29,19 @@ class CameraWidget(QWidget):
     camera_clicked = Signal(int)  # camera_id
     image_reload_requested = Signal(int)  # camera_id
     
-    def __init__(self, camera: Camera, parent=None):
+    def __init__(self, camera: Camera, thumbnail_size: tuple = None, parent=None):
         """
         Inicializa el widget de cámara.
         
         Args:
             camera: Objeto Camera a mostrar
+            thumbnail_size: Tupla (ancho, alto) para el tamaño de la miniatura
             parent: Widget padre
         """
         super().__init__(parent)
         self.camera = camera
         self.current_pixmap = None
+        self.thumbnail_size = thumbnail_size or config.THUMBNAIL_SIZE
         
         self._setup_ui()
     
@@ -54,8 +56,10 @@ class CameraWidget(QWidget):
         # Etiqueta de imagen
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setMinimumSize(QSize(300, 225))
-        self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        width, height = self.thumbnail_size
+        self.image_label.setMinimumSize(QSize(width, height))
+        self.image_label.setMaximumSize(QSize(width, height))
+        self.image_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.image_label.setStyleSheet("""
             QLabel {
                 background-color: #34495e;

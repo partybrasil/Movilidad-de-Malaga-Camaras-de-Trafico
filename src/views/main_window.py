@@ -40,6 +40,7 @@ class MainWindow(QMainWindow):
         self.camera_widgets = {}  # Mapeo camera_id -> widget
         self.current_view_mode = config.DEFAULT_VIEW_MODE
         self.current_theme = config.DEFAULT_THEME
+        self.thumbnail_zoom_level = config.DEFAULT_THUMBNAIL_ZOOM  # Nivel de zoom actual (1-5)
         
         self._setup_ui()
         self._connect_signals()
@@ -280,6 +281,80 @@ class MainWindow(QMainWindow):
         
         layout.addSpacing(20)
         
+        # Controles de zoom (solo para vista cuadrícula)
+        self.zoom_controls = QWidget()
+        zoom_layout = QHBoxLayout()
+        zoom_layout.setContentsMargins(0, 0, 0, 0)
+        zoom_layout.setSpacing(8)
+        
+        zoom_label = QLabel("🔍 Zoom:")
+        zoom_layout.addWidget(zoom_label)
+        
+        # Botón zoom -
+        self.zoom_out_btn = QPushButton("−")
+        self.zoom_out_btn.setFixedSize(30, 30)
+        self.zoom_out_btn.setObjectName("zoom")
+        self.zoom_out_btn.setStyleSheet("""
+            QPushButton#zoom {
+                font-size: 18pt;
+                font-weight: bold;
+                border-radius: 15px;
+                background-color: #ecf0f1;
+            }
+            QPushButton#zoom:hover {
+                background-color: #3498db;
+                color: white;
+            }
+            QPushButton#zoom:disabled {
+                background-color: #bdc3c7;
+                color: #7f8c8d;
+            }
+        """)
+        self.zoom_out_btn.clicked.connect(self._zoom_out)
+        zoom_layout.addWidget(self.zoom_out_btn)
+        
+        # Indicador de nivel de zoom
+        self.zoom_indicator = QLabel(f"{self.thumbnail_zoom_level}/5")
+        self.zoom_indicator.setStyleSheet("""
+            font-weight: bold;
+            font-size: 10pt;
+            padding: 4px 10px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+        """)
+        zoom_layout.addWidget(self.zoom_indicator)
+        
+        # Botón zoom +
+        self.zoom_in_btn = QPushButton("+")
+        self.zoom_in_btn.setFixedSize(30, 30)
+        self.zoom_in_btn.setObjectName("zoom")
+        self.zoom_in_btn.setStyleSheet("""
+            QPushButton#zoom {
+                font-size: 18pt;
+                font-weight: bold;
+                border-radius: 15px;
+                background-color: #ecf0f1;
+            }
+            QPushButton#zoom:hover {
+                background-color: #3498db;
+                color: white;
+            }
+            QPushButton#zoom:disabled {
+                background-color: #bdc3c7;
+                color: #7f8c8d;
+            }
+        """)
+        self.zoom_in_btn.clicked.connect(self._zoom_in)
+        zoom_layout.addWidget(self.zoom_in_btn)
+        
+        self.zoom_controls.setLayout(zoom_layout)
+        layout.addWidget(self.zoom_controls)
+        
+        # Ocultar controles de zoom inicialmente si no estamos en vista cuadrícula
+        self.zoom_controls.setVisible(self.current_view_mode == "cuadricula")
+        
+        layout.addSpacing(20)
+        
         # Botón limpiar filtros
         clear_btn = QPushButton("❌ Limpiar")
         clear_btn.setObjectName("secondary")
@@ -322,6 +397,8 @@ class MainWindow(QMainWindow):
         # Scroll area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
         # Contenedor de items en grid
         self.grid_container = QWidget()
@@ -414,13 +491,17 @@ class MainWindow(QMainWindow):
         Args:
             cameras: Lista de cámaras
         """
-        cols = config.GRID_COLUMNS
+        # Calcular columnas dinámicamente
+        cols = self._calculate_grid_columns()
+        
+        # Obtener tamaño de miniatura actual
+        thumbnail_size = config.THUMBNAIL_SIZES[self.thumbnail_zoom_level]
         
         for idx, camera in enumerate(cameras):
             row = idx // cols
             col = idx % cols
             
-            camera_widget = CameraWidget(camera)
+            camera_widget = CameraWidget(camera, thumbnail_size=thumbnail_size)
             camera_widget.camera_clicked.connect(self._show_camera_details)
             camera_widget.image_reload_requested.connect(
                 lambda cam_id: self.controller.load_camera_image(
@@ -505,8 +586,10 @@ class MainWindow(QMainWindow):
         
         if view_mode == "lista":
             self.stacked_widget.setCurrentIndex(0)
+            self.zoom_controls.setVisible(False)
         else:
             self.stacked_widget.setCurrentIndex(1)
+            self.zoom_controls.setVisible(True)
         
         # Recargar cámaras en la nueva vista
         cameras = self.controller.get_filtered_cameras()
@@ -542,6 +625,62 @@ class MainWindow(QMainWindow):
         self.search_input.clear()
         self.zone_combo.setCurrentIndex(0)
         self.controller.filter_by_zona(None)
+    
+    def _zoom_in(self):
+        """
+        Aumenta el tamaño de las miniaturas.
+        """
+        if self.thumbnail_zoom_level < 5:
+            self.thumbnail_zoom_level += 1
+            self._update_zoom()
+            logger.info(f"Zoom aumentado a nivel {self.thumbnail_zoom_level}")
+    
+    def _zoom_out(self):
+        """
+        Disminuye el tamaño de las miniaturas.
+        """
+        if self.thumbnail_zoom_level > 1:
+            self.thumbnail_zoom_level -= 1
+            self._update_zoom()
+            logger.info(f"Zoom disminuido a nivel {self.thumbnail_zoom_level}")
+    
+    def _update_zoom(self):
+        """
+        Actualiza el zoom de las miniaturas y reorganiza la cuadrícula.
+        """
+        # Actualizar indicador
+        self.zoom_indicator.setText(f"{self.thumbnail_zoom_level}/5")
+        
+        # Actualizar estado de botones
+        self.zoom_out_btn.setEnabled(self.thumbnail_zoom_level > 1)
+        self.zoom_in_btn.setEnabled(self.thumbnail_zoom_level < 5)
+        
+        # Solo actualizar si estamos en vista cuadrícula
+        if self.current_view_mode == "cuadricula":
+            cameras = self.controller.get_filtered_cameras()
+            self._update_camera_display(cameras)
+    
+    def _calculate_grid_columns(self) -> int:
+        """
+        Calcula el número óptimo de columnas según el tamaño de miniatura y ancho de ventana.
+        
+        Returns:
+            Número de columnas para la cuadrícula
+        """
+        # Obtener tamaño de miniatura actual
+        thumbnail_width, _ = config.THUMBNAIL_SIZES[self.thumbnail_zoom_level]
+        
+        # Ancho disponible (restar márgenes y scrollbar)
+        available_width = self.grid_view.width() - 50  # Margen extra para scrollbar
+        
+        # Calcular columnas (mínimo 1, máximo 6)
+        spacing = 15  # Espacio entre widgets
+        widget_total_width = thumbnail_width + 30  # +30 por padding del widget
+        
+        columns = max(1, min(6, available_width // (widget_total_width + spacing)))
+        
+        logger.debug(f"Calculadas {columns} columnas para ancho {available_width}px con miniaturas de {thumbnail_width}px")
+        return columns
     
     def _refresh_all(self):
         """

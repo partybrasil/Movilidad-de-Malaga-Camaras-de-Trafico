@@ -29,8 +29,18 @@ IMAGE_REQUEST_HEADERS = {
 
 # Configuración de vista
 DEFAULT_VIEW_MODE = "lista"  # "lista" o "cuadricula"
-GRID_COLUMNS = 3  # Columnas en vista cuadrícula
+GRID_COLUMNS = 3  # Columnas en vista cuadrícula (calculado dinámicamente)
 THUMBNAIL_SIZE = (320, 240)  # Tamaño de miniaturas
+
+# Configuración de zoom en vista cuadrícula
+THUMBNAIL_SIZES = {
+    1: (200, 150),   # Muy pequeño - más cámaras por pantalla
+    2: (250, 187),   # Pequeño
+    3: (300, 225),   # Medio (default)
+    4: (350, 262),   # Grande
+    5: (400, 300),   # Muy grande
+}
+DEFAULT_THUMBNAIL_ZOOM = 3  # Nivel de zoom por defecto (1-5)
 
 # Configuración de caché
 ENABLE_IMAGE_CACHE = True
