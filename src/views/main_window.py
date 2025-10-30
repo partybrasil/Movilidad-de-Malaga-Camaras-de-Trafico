@@ -16,7 +16,7 @@ from PySide6.QtGui import QDesktopServices
 import logging
 
 from src.controllers.camera_controller import CameraController
-from src.views.camera_widget import CameraWidget, CameraListItem
+from src.views.camera_widget import CameraWidget, CameraListItem, CameraDetailDialog
 from src.views.styles import get_theme
 from src.models.camera import Camera
 import config
@@ -558,7 +558,7 @@ class MainWindow(QMainWindow):
     
     def _show_camera_details(self, camera_id: int):
         """
-        Muestra los detalles de una cámara.
+        Muestra los detalles de una cámara en un diálogo dedicado.
         
         Args:
             camera_id: ID de la cámara
@@ -567,31 +567,13 @@ class MainWindow(QMainWindow):
         if not camera:
             return
         
-        # Crear diálogo de detalles
-        details_html = f"""
-        <h2>{camera.nombre}</h2>
-        <p><b>📍 Dirección:</b> {camera.direccion}</p>
-        <p><b>🗺 Zona:</b> {camera.get_zona_from_direccion()}</p>
-        """
-        
-        if camera.coordenadas:
-            x, y = camera.coordenadas
-            details_html += f"<p><b>📐 Coordenadas:</b> X={x:.2f}, Y={y:.2f}</p>"
-        
-        if camera.url:
-            details_html += f'<p><b>🔗 Web:</b> <a href="{camera.url}">Ver en web oficial</a></p>'
-        
-        if camera.url_imagen:
-            details_html += f'<p><b>🖼 Imagen:</b> <a href="{camera.url_imagen}">Enlace directo</a></p>'
-        
-        details_html += "<hr><p><i>💡 Integración de mapas disponible en futuras versiones</i></p>"
-        
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Detalles de Cámara")
-        msg.setTextFormat(Qt.RichText)
-        msg.setText(details_html)
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.exec()
+        # Crear y mostrar diálogo de detalle con controles
+        detail_dialog = CameraDetailDialog(
+            camera, 
+            self.controller.image_loader,
+            self
+        )
+        detail_dialog.exec()
     
     def _show_about(self):
         """

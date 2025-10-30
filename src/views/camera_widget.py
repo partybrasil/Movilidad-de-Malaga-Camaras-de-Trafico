@@ -7,9 +7,9 @@ y datos de una cámara de tráfico.
 
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, 
-    QPushButton, QSizePolicy
+    QPushButton, QSizePolicy, QDialog, QGroupBox
 )
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QColor
 import logging
 
@@ -270,3 +270,301 @@ class CameraListItem(QWidget):
         """
         if event.button() == Qt.LeftButton:
             self.camera_clicked.emit(self.camera.id)
+
+
+class CameraDetailDialog(QDialog):
+    """
+    Diálogo para mostrar una cámara individual con controles.
+    """
+    
+    # Señales
+    image_reload_requested = Signal()
+    
+    def __init__(self, camera: Camera, image_loader, parent=None):
+        """
+        Inicializa el diálogo de detalle.
+        
+        Args:
+            camera: Objeto Camera a mostrar
+            image_loader: Instancia de ImageLoader para cargar imágenes
+            parent: Widget padre
+        """
+        super().__init__(parent)
+        self.camera = camera
+        self.image_loader = image_loader
+        self.current_pixmap = None
+        self.is_paused = False
+        self.auto_refresh_timer = QTimer()
+        
+        self._setup_ui()
+        self._connect_signals()
+        
+        # Cargar imagen inicial
+        self._load_image()
+        
+        # Iniciar auto-refresh por defecto
+        self.auto_refresh_timer.timeout.connect(self._auto_refresh)
+        self.auto_refresh_timer.start(config.IMAGE_REFRESH_INTERVAL * 1000)
+    
+    def _setup_ui(self):
+        """
+        Configura la interfaz del diálogo.
+        """
+        self.setWindowTitle(f"Cámara - {self.camera.nombre}")
+        self.setMinimumSize(800, 700)
+        
+        layout = QVBoxLayout()
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+        
+        # Información de la cámara
+        info_group = QGroupBox("📍 Información")
+        info_layout = QVBoxLayout()
+        
+        self.name_label = QLabel(f"<b>{self.camera.nombre}</b>")
+        self.name_label.setWordWrap(True)
+        info_layout.addWidget(self.name_label)
+        
+        self.address_label = QLabel(f"Dirección: {self.camera.direccion}")
+        self.address_label.setWordWrap(True)
+        info_layout.addWidget(self.address_label)
+        
+        zona = self.camera.get_zona_from_direccion()
+        self.zone_label = QLabel(f"Zona: {zona}")
+        info_layout.addWidget(self.zone_label)
+        
+        if self.camera.coordenadas:
+            x, y = self.camera.coordenadas
+            self.coords_label = QLabel(f"Coordenadas: X={x:.2f}, Y={y:.2f}")
+            info_layout.addWidget(self.coords_label)
+        
+        info_group.setLayout(info_layout)
+        layout.addWidget(info_group)
+        
+        # Imagen de la cámara
+        image_group = QGroupBox("📹 Vista en Tiempo Real")
+        image_layout = QVBoxLayout()
+        
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setMinimumSize(QSize(640, 480))
+        self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.image_label.setStyleSheet("""
+            QLabel {
+                background-color: #34495e;
+                border: 2px solid #2c3e50;
+                border-radius: 4px;
+                color: white;
+            }
+        """)
+        self.image_label.setText("⏳ Cargando imagen...")
+        image_layout.addWidget(self.image_label)
+        
+        # Estado de actualización
+        self.status_label = QLabel("Estado: Cargando...")
+        self.status_label.setStyleSheet("color: gray; font-size: 9pt;")
+        self.status_label.setAlignment(Qt.AlignCenter)
+        image_layout.addWidget(self.status_label)
+        
+        image_group.setLayout(image_layout)
+        layout.addWidget(image_group, stretch=1)
+        
+        # Controles
+        controls_layout = QHBoxLayout()
+        controls_layout.setSpacing(10)
+        
+        # Botón actualizar manualmente
+        self.refresh_btn = QPushButton("🔄 Actualizar Ahora")
+        self.refresh_btn.clicked.connect(self._manual_refresh)
+        controls_layout.addWidget(self.refresh_btn)
+        
+        # Botón pausar/reanudar
+        self.pause_btn = QPushButton("⏸ Pausar Auto-refresh")
+        self.pause_btn.setCheckable(True)
+        self.pause_btn.clicked.connect(self._toggle_pause)
+        controls_layout.addWidget(self.pause_btn)
+        
+        # Botón guardar imagen
+        self.save_btn = QPushButton("💾 Guardar Imagen")
+        self.save_btn.clicked.connect(self._save_image)
+        self.save_btn.setEnabled(False)
+        controls_layout.addWidget(self.save_btn)
+        
+        # Botón abrir en navegador
+        if self.camera.url:
+            self.browser_btn = QPushButton("🌐 Ver en Web")
+            self.browser_btn.clicked.connect(self._open_in_browser)
+            controls_layout.addWidget(self.browser_btn)
+        
+        layout.addLayout(controls_layout)
+        
+        # Botón cerrar
+        close_layout = QHBoxLayout()
+        close_layout.addStretch()
+        close_btn = QPushButton("✖ Cerrar")
+        close_btn.setObjectName("secondary")
+        close_btn.clicked.connect(self.close)
+        close_layout.addWidget(close_btn)
+        layout.addLayout(close_layout)
+        
+        self.setLayout(layout)
+    
+    def _connect_signals(self):
+        """
+        Conecta las señales del image loader.
+        """
+        self.image_loader.image_loaded.connect(self._on_image_loaded)
+        self.image_loader.image_error.connect(self._on_image_error)
+    
+    def _load_image(self, force_reload=False):
+        """
+        Carga la imagen de la cámara.
+        
+        Args:
+            force_reload: Si True, fuerza la recarga ignorando caché
+        """
+        if self.camera.url_imagen:
+            self.status_label.setText("Estado: Cargando...")
+            self.image_loader.load_image(self.camera.id, self.camera.url_imagen, force_reload)
+    
+    def _manual_refresh(self):
+        """
+        Actualiza la imagen manualmente.
+        """
+        logger.info(f"Actualización manual de cámara {self.camera.id}")
+        self.image_label.setText("⏳ Actualizando...")
+        self._load_image(force_reload=True)
+    
+    def _auto_refresh(self):
+        """
+        Actualización automática por timer.
+        """
+        if not self.is_paused:
+            logger.debug(f"Auto-refresh de cámara {self.camera.id}")
+            self._load_image(force_reload=True)
+    
+    def _toggle_pause(self, checked):
+        """
+        Pausa o reanuda el auto-refresh.
+        
+        Args:
+            checked: Estado del botón
+        """
+        self.is_paused = checked
+        
+        if checked:
+            self.pause_btn.setText("▶ Reanudar Auto-refresh")
+            self.status_label.setText("Estado: Auto-refresh pausado")
+            logger.info(f"Auto-refresh pausado para cámara {self.camera.id}")
+        else:
+            self.pause_btn.setText("⏸ Pausar Auto-refresh")
+            self.status_label.setText("Estado: Auto-refresh activo")
+            logger.info(f"Auto-refresh reanudado para cámara {self.camera.id}")
+            # Refrescar inmediatamente al reanudar
+            self._load_image(force_reload=True)
+    
+    def _save_image(self):
+        """
+        Guarda la imagen actual en el disco.
+        """
+        if self.current_pixmap and not self.current_pixmap.isNull():
+            from PySide6.QtWidgets import QFileDialog
+            from datetime import datetime
+            
+            # Nombre de archivo sugerido
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            suggested_name = f"camara_{self.camera.id}_{timestamp}.jpg"
+            
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Guardar Imagen",
+                suggested_name,
+                "Imágenes (*.jpg *.jpeg *.png)"
+            )
+            
+            if file_path:
+                if self.current_pixmap.save(file_path):
+                    self.status_label.setText(f"Estado: Imagen guardada en {file_path}")
+                    logger.info(f"Imagen guardada: {file_path}")
+                else:
+                    self.status_label.setText("Estado: Error al guardar imagen")
+                    logger.error("Error al guardar imagen")
+    
+    def _open_in_browser(self):
+        """
+        Abre la URL de la cámara en el navegador web.
+        """
+        if self.camera.url:
+            from PySide6.QtGui import QDesktopServices
+            from PySide6.QtCore import QUrl
+            QDesktopServices.openUrl(QUrl(self.camera.url))
+            logger.info(f"Abriendo URL en navegador: {self.camera.url}")
+    
+    def _on_image_loaded(self, camera_id: int, pixmap: QPixmap):
+        """
+        Callback cuando se carga la imagen.
+        
+        Args:
+            camera_id: ID de la cámara
+            pixmap: Imagen cargada
+        """
+        if camera_id == self.camera.id:
+            if pixmap and not pixmap.isNull():
+                self.current_pixmap = pixmap
+                
+                # Escalar manteniendo aspecto
+                scaled_pixmap = pixmap.scaled(
+                    self.image_label.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.image_label.setPixmap(scaled_pixmap)
+                
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                
+                if self.is_paused:
+                    self.status_label.setText(f"Estado: Pausado | Última actualización: {timestamp}")
+                else:
+                    self.status_label.setText(f"Estado: Activo | Última actualización: {timestamp}")
+                
+                self.save_btn.setEnabled(True)
+                logger.debug(f"Imagen cargada para cámara {camera_id}")
+    
+    def _on_image_error(self, camera_id: int, error_msg: str):
+        """
+        Callback cuando falla la carga.
+        
+        Args:
+            camera_id: ID de la cámara
+            error_msg: Mensaje de error
+        """
+        if camera_id == self.camera.id:
+            self.image_label.setText(f"❌ Error: {error_msg}")
+            self.status_label.setText(f"Estado: Error - {error_msg}")
+            self.save_btn.setEnabled(False)
+            logger.error(f"Error cargando imagen cámara {camera_id}: {error_msg}")
+    
+    def resizeEvent(self, event):
+        """
+        Maneja el redimensionamiento del diálogo.
+        """
+        super().resizeEvent(event)
+        
+        # Reescalar imagen si existe
+        if self.current_pixmap:
+            scaled_pixmap = self.current_pixmap.scaled(
+                self.image_label.size(),
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            self.image_label.setPixmap(scaled_pixmap)
+    
+    def closeEvent(self, event):
+        """
+        Maneja el cierre del diálogo.
+        """
+        # Detener el timer al cerrar
+        self.auto_refresh_timer.stop()
+        logger.info(f"Cerrando vista detalle de cámara {self.camera.id}")
+        event.accept()
