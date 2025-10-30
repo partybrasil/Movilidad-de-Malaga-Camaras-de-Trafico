@@ -7,7 +7,7 @@ y datos de una cámara de tráfico.
 
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout, 
-    QPushButton, QSizePolicy, QDialog, QGroupBox
+    QPushButton, QSizePolicy, QDialog, QGroupBox, QComboBox
 )
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QColor
@@ -295,6 +295,7 @@ class CameraDetailDialog(QDialog):
         self.current_pixmap = None
         self.is_paused = False
         self.auto_refresh_timer = QTimer()
+        self.current_refresh_interval = config.IMAGE_REFRESH_INTERVAL  # Guardar intervalo actual
         
         self._setup_ui()
         self._connect_signals()
@@ -304,7 +305,7 @@ class CameraDetailDialog(QDialog):
         
         # Iniciar auto-refresh por defecto
         self.auto_refresh_timer.timeout.connect(self._auto_refresh)
-        self.auto_refresh_timer.start(config.IMAGE_REFRESH_INTERVAL * 1000)
+        self.auto_refresh_timer.start(self.current_refresh_interval * 1000)
     
     def _setup_ui(self):
         """
@@ -384,6 +385,29 @@ class CameraDetailDialog(QDialog):
         self.pause_btn.clicked.connect(self._toggle_pause)
         controls_layout.addWidget(self.pause_btn)
         
+        # Selector de intervalo de actualización
+        interval_label = QLabel("⏱ Intervalo:")
+        controls_layout.addWidget(interval_label)
+        
+        self.interval_combo = QComboBox()
+        self.interval_combo.addItem("5 segundos", 5)
+        self.interval_combo.addItem("10 segundos", 10)
+        self.interval_combo.addItem("15 segundos", 15)
+        self.interval_combo.addItem("30 segundos", 30)
+        self.interval_combo.addItem("1 minuto", 60)
+        self.interval_combo.addItem("2 minutos", 120)
+        self.interval_combo.addItem("5 minutos", 300)
+        
+        # Seleccionar el intervalo por defecto
+        default_index = self.interval_combo.findData(config.IMAGE_REFRESH_INTERVAL)
+        if default_index >= 0:
+            self.interval_combo.setCurrentIndex(default_index)
+        else:
+            self.interval_combo.setCurrentIndex(3)  # 30 segundos por defecto
+        
+        self.interval_combo.currentIndexChanged.connect(self._on_interval_changed)
+        controls_layout.addWidget(self.interval_combo)
+        
         # Botón guardar imagen
         self.save_btn = QPushButton("💾 Guardar Imagen")
         self.save_btn.clicked.connect(self._save_image)
@@ -455,13 +479,50 @@ class CameraDetailDialog(QDialog):
         if checked:
             self.pause_btn.setText("▶ Reanudar Auto-refresh")
             self.status_label.setText("Estado: Auto-refresh pausado")
+            self.interval_combo.setEnabled(False)  # Deshabilitar selector cuando está pausado
             logger.info(f"Auto-refresh pausado para cámara {self.camera.id}")
         else:
             self.pause_btn.setText("⏸ Pausar Auto-refresh")
             self.status_label.setText("Estado: Auto-refresh activo")
+            self.interval_combo.setEnabled(True)  # Habilitar selector cuando está activo
             logger.info(f"Auto-refresh reanudado para cámara {self.camera.id}")
             # Refrescar inmediatamente al reanudar
             self._load_image(force_reload=True)
+    
+    def _on_interval_changed(self, index):
+        """
+        Maneja el cambio de intervalo de actualización.
+        
+        Args:
+            index: Índice seleccionado en el combo
+        """
+        new_interval = self.interval_combo.currentData()
+        if new_interval and new_interval != self.current_refresh_interval:
+            self.current_refresh_interval = new_interval
+            
+            # Reiniciar el timer con el nuevo intervalo
+            if self.auto_refresh_timer.isActive():
+                self.auto_refresh_timer.stop()
+                self.auto_refresh_timer.start(self.current_refresh_interval * 1000)
+            
+            logger.info(f"Intervalo de auto-refresh cambiado a {new_interval} segundos para cámara {self.camera.id}")
+            self.status_label.setText(f"Estado: Auto-refresh cada {self._format_interval(new_interval)}")
+    
+    def _format_interval(self, seconds):
+        """
+        Formatea el intervalo en segundos a un texto legible.
+        
+        Args:
+            seconds: Segundos del intervalo
+            
+        Returns:
+            String formateado (ej: "30s", "1m", "2m")
+        """
+        if seconds < 60:
+            return f"{seconds}s"
+        else:
+            minutes = seconds // 60
+            return f"{minutes}m"
     
     def _save_image(self):
         """
@@ -526,7 +587,8 @@ class CameraDetailDialog(QDialog):
                 if self.is_paused:
                     self.status_label.setText(f"Estado: Pausado | Última actualización: {timestamp}")
                 else:
-                    self.status_label.setText(f"Estado: Activo | Última actualización: {timestamp}")
+                    interval_text = self._format_interval(self.current_refresh_interval)
+                    self.status_label.setText(f"Estado: Activo (cada {interval_text}) | Última actualización: {timestamp}")
                 
                 self.save_btn.setEnabled(True)
                 logger.debug(f"Imagen cargada para cámara {camera_id}")
