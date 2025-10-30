@@ -27,6 +27,7 @@ class CameraController(QObject):
     data_loaded = Signal(bool)  # True si carga exitosa
     cameras_updated = Signal(list)  # Lista de cámaras a mostrar
     loading_progress = Signal(str)  # Mensaje de progreso
+    refresh_progress = Signal(int, int)  # (actual, total) para progreso de actualización
     
     def __init__(self):
         """
@@ -199,11 +200,15 @@ class CameraController(QObject):
         """
         Refresca todas las imágenes de las cámaras filtradas.
         """
-        logger.info(f"Refrescando {len(self.filtered_cameras)} imágenes...")
+        total_cameras = len(self.filtered_cameras)
+        logger.info(f"Refrescando {total_cameras} imágenes...")
         self.image_loader.clear_cache()
         
-        for camera in self.filtered_cameras:
+        for index, camera in enumerate(self.filtered_cameras, start=1):
             self.load_camera_image(camera, force_reload=True)
+            # Emitir progreso
+            self.refresh_progress.emit(index, total_cameras)
+            logger.debug(f"Actualizando cámara {index}/{total_cameras}")
     
     def select_camera(self, camera_id: int):
         """

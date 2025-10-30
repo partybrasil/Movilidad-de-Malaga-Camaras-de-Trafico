@@ -219,6 +219,19 @@ class MainWindow(QMainWindow):
         # Espaciador
         layout.addStretch()
         
+        # Indicador de auto-refresco
+        self.auto_refresh_indicator = QLabel("⏸ Auto-refresco: Inactivo")
+        self.auto_refresh_indicator.setStyleSheet("""
+            font-size: 11pt;
+            font-weight: bold;
+            padding: 8px 12px;
+            background-color: rgba(149, 165, 166, 0.3);
+            border-radius: 5px;
+            color: #7f8c8d;
+            margin-right: 10px;
+        """)
+        layout.addWidget(self.auto_refresh_indicator)
+        
         # Contador de cámaras
         self.camera_count_label = QLabel("0 cámaras")
         self.camera_count_label.setStyleSheet("""
@@ -328,6 +341,7 @@ class MainWindow(QMainWindow):
         self.controller.data_loaded.connect(self._on_data_loaded)
         self.controller.cameras_updated.connect(self._update_camera_display)
         self.controller.loading_progress.connect(self._update_status)
+        self.controller.refresh_progress.connect(self._on_refresh_progress)
         self.controller.image_loader.image_loaded.connect(self._on_image_loaded)
         self.controller.image_loader.image_error.connect(self._on_image_error)
     
@@ -466,6 +480,20 @@ class MainWindow(QMainWindow):
             if isinstance(widget, CameraWidget):
                 widget.set_error("Error al cargar")
     
+    def _on_refresh_progress(self, current: int, total: int):
+        """
+        Callback cuando se actualiza el progreso de refresco.
+        
+        Args:
+            current: Número de cámara actual
+            total: Total de cámaras a actualizar
+        """
+        if current < total:
+            self.status_bar.showMessage(f"Actualizando Cámara {current}/{total}...")
+        else:
+            self.status_bar.showMessage("✓ Todas las Cámaras han sido Actualizadas", 5000)
+            logger.info("Actualización completa de todas las cámaras")
+    
     def _change_view(self, view_mode: str):
         """
         Cambia entre vista lista y cuadrícula.
@@ -519,9 +547,9 @@ class MainWindow(QMainWindow):
         """
         Refresca todas las imágenes.
         """
-        self.status_bar.showMessage("Actualizando imágenes...")
+        total_cameras = len(self.controller.get_filtered_cameras())
+        self.status_bar.showMessage(f"Iniciando actualización de {total_cameras} cámaras...")
         self.controller.refresh_all_images()
-        self.status_bar.showMessage("Imágenes actualizadas", 2000)
     
     def _toggle_auto_refresh(self, checked: bool):
         """
@@ -533,9 +561,31 @@ class MainWindow(QMainWindow):
         if checked:
             self.controller.start_auto_refresh()
             self.status_bar.showMessage("Auto-refresco activado", 2000)
+            # Actualizar indicador visual
+            self.auto_refresh_indicator.setText("▶ Auto-refresco: Activo")
+            self.auto_refresh_indicator.setStyleSheet("""
+                font-size: 11pt;
+                font-weight: bold;
+                padding: 8px 12px;
+                background-color: rgba(39, 174, 96, 0.3);
+                border-radius: 5px;
+                color: #27ae60;
+                margin-right: 10px;
+            """)
         else:
             self.controller.stop_auto_refresh()
             self.status_bar.showMessage("Auto-refresco desactivado", 2000)
+            # Actualizar indicador visual
+            self.auto_refresh_indicator.setText("⏸ Auto-refresco: Inactivo")
+            self.auto_refresh_indicator.setStyleSheet("""
+                font-size: 11pt;
+                font-weight: bold;
+                padding: 8px 12px;
+                background-color: rgba(149, 165, 166, 0.3);
+                border-radius: 5px;
+                color: #7f8c8d;
+                margin-right: 10px;
+            """)
     
     def _toggle_theme(self):
         """
