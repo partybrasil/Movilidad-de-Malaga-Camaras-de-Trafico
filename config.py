@@ -45,7 +45,7 @@ THUMBNAIL_SIZES = {
 DEFAULT_THUMBNAIL_ZOOM = 3  # Nivel de zoom por defecto (1-5)
 
 # Sistema de favoritos
-MAX_FAVORITES = 9  # Límite de cámaras favoritas (configurable)
+MAX_FAVORITES = 20  # Límite de cámaras favoritas (configurable)
 APP_DATA_DIR_NAME = "movilidad_malaga"
 FAVORITES_FILE_NAME = "favorites.json"
 
