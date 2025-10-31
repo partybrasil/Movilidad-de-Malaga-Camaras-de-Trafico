@@ -5,14 +5,17 @@ Este módulo gestiona la lógica de negocio y coordina entre
 el modelo de datos y las vistas.
 """
 
-from PySide6.QtCore import QObject, Signal, QTimer
+from pathlib import Path
 from typing import List, Optional, Set, Tuple
+
+from PySide6.QtCore import QObject, Signal, QTimer
 import logging
 
 from src.models.camera import Camera
 from src.utils.data_loader import DataLoader
 from src.utils.image_loader import ImageLoader
 from src.utils.preferences import FavoritesManager
+from src.timelapse import TimelapseManager, TimelapseSession
 import config
 
 
@@ -31,6 +34,11 @@ class CameraController(QObject):
     refresh_progress = Signal(int, int)  # (actual, total) para progreso de actualización
     favorites_updated = Signal(list)  # Lista de IDs favoritas
     favorite_toggled = Signal(int, bool)  # camera_id, estado final
+    timelapse_sessions_changed = Signal(list)
+    timelapse_session_started = Signal(object)
+    timelapse_session_finished = Signal(object)
+    timelapse_error = Signal(str)
+    timelapse_export_completed = Signal(str, str, str)
     
     def __init__(self):
         """
@@ -54,6 +62,14 @@ class CameraController(QObject):
         # Timer para actualización automática
         self.auto_refresh_timer = QTimer()
         self.auto_refresh_timer.timeout.connect(self._auto_refresh_images)
+
+        # Timelapse
+        self.timelapse_manager = TimelapseManager()
+        self.timelapse_manager.sessions_changed.connect(self.timelapse_sessions_changed.emit)
+        self.timelapse_manager.session_started.connect(self.timelapse_session_started.emit)
+        self.timelapse_manager.session_finished.connect(self.timelapse_session_finished.emit)
+        self.timelapse_manager.session_error.connect(self.timelapse_error.emit)
+        self.timelapse_manager.export_completed.connect(self.timelapse_export_completed.emit)
         
         logger.info("CameraController inicializado")
     
@@ -258,6 +274,42 @@ class CameraController(QObject):
             cam for cam in self.all_cameras
             if cam.id in self.selected_cameras
         ]
+
+    # ------------------------------------------------------------------
+    # Timelapse
+    # ------------------------------------------------------------------
+
+    def get_timelapse_sessions(self) -> List[TimelapseSession]:
+        return self.timelapse_manager.list_sessions()
+
+    def get_timelapse_session(self, session_id: str) -> Optional[TimelapseSession]:
+        return self.timelapse_manager.get_session(session_id)
+
+    def get_active_timelapse_ids(self) -> List[str]:
+        return self.timelapse_manager.active_session_ids()
+
+    def start_timelapse(
+        self,
+        camera_ids: List[int],
+        interval_seconds: Optional[int] = None,
+        duration_seconds: Optional[int] = None,
+    ) -> List[TimelapseSession]:
+        cameras = [camera for camera in self.all_cameras if camera.id in camera_ids]
+        return self.timelapse_manager.start_timelapse(
+            cameras,
+            interval=interval_seconds,
+            duration_limit=duration_seconds,
+        )
+
+    def stop_timelapse(self, session_id: str) -> None:
+        self.timelapse_manager.stop_timelapse(session_id)
+
+    def delete_timelapse(self, session_id: str) -> None:
+        self.timelapse_manager.delete_session(session_id)
+
+    def export_timelapse(self, session_id: str, fmt: str, destination: str | Path | None = None) -> Path:
+        target_path = Path(destination) if destination else None
+        return self.timelapse_manager.export_session(session_id, fmt, target_path)
 
     # ------------------------------------------------------------------
     # Gestión de favoritos

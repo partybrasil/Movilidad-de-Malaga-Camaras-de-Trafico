@@ -20,6 +20,8 @@ from src.controllers.camera_controller import CameraController
 from src.views.camera_widget import CameraWidget, CameraListItem, CameraDetailDialog
 from src.views.styles import get_theme
 from src.models.camera import Camera
+from src.views.timelapse_library import TimelapseLibraryDialog
+from src.timelapse.models import TimelapseSession
 import config
 
 
@@ -46,10 +48,12 @@ class MainWindow(QMainWindow):
         self.current_view_mode = config.DEFAULT_VIEW_MODE
         self.current_theme = config.DEFAULT_THEME
         self.thumbnail_zoom_level = config.DEFAULT_THUMBNAIL_ZOOM  # Nivel de zoom actual (1-5)
+        self.timelapse_dialog: TimelapseLibraryDialog | None = None
         
         self._setup_ui()
         self._connect_signals()
         self._apply_theme()
+        self._update_timelapse_indicator(self.controller.get_timelapse_sessions())
         
         # Cargar datos iniciales
         self.controller.load_initial_data()
@@ -138,7 +142,13 @@ class MainWindow(QMainWindow):
         self.btn_auto_refresh.setCheckable(True)
         self.btn_auto_refresh.clicked.connect(self._toggle_auto_refresh)
         layout.addWidget(self.btn_auto_refresh)
-        
+
+        layout.addSpacing(10)
+
+        self.btn_timelapse = QPushButton("🎞 Timelapse")
+        self.btn_timelapse.clicked.connect(self._open_timelapse_library)
+        layout.addWidget(self.btn_timelapse)
+
         layout.addSpacing(10)
         
         self.btn_tema = QPushButton("🌓 Cambiar Tema")
@@ -245,6 +255,19 @@ class MainWindow(QMainWindow):
             margin-right: 10px;
         """)
         layout.addWidget(self.auto_refresh_indicator)
+
+        # Indicador de timelapse
+        self.timelapse_indicator = QLabel("🎞 Timelapse: 0 activos / 0 guardados")
+        self.timelapse_indicator.setStyleSheet("""
+            font-size: 10pt;
+            font-weight: bold;
+            padding: 6px 10px;
+            background-color: rgba(241, 196, 15, 0.2);
+            border-radius: 5px;
+            color: #f39c12;
+            margin-right: 10px;
+        """)
+        layout.addWidget(self.timelapse_indicator)
         
         # Contador de cámaras
         self.camera_count_label = QLabel("0 cámaras")
@@ -471,7 +494,76 @@ class MainWindow(QMainWindow):
         self.controller.image_loader.image_error.connect(self._on_image_error)
         self.controller.favorites_updated.connect(self._on_favorites_updated)
         self.controller.favorite_toggled.connect(self._on_favorite_toggled)
+        self.controller.timelapse_sessions_changed.connect(self._on_timelapse_sessions_changed)
+        self.controller.timelapse_session_started.connect(self._on_timelapse_started)
+        self.controller.timelapse_session_finished.connect(self._on_timelapse_finished)
+        self.controller.timelapse_error.connect(self._on_timelapse_error)
+        self.controller.timelapse_export_completed.connect(self._on_timelapse_exported)
     
+    def _open_timelapse_library(self):
+        """Abre el diálogo de gestión de timelapses."""
+        if self.timelapse_dialog and self.timelapse_dialog.isVisible():
+            self.timelapse_dialog.raise_()
+            self.timelapse_dialog.activateWindow()
+            return
+
+        self.timelapse_dialog = TimelapseLibraryDialog(self.controller, self)
+        self.timelapse_dialog.finished.connect(self._on_timelapse_dialog_closed)
+        self.timelapse_dialog.show()
+
+    def _on_timelapse_dialog_closed(self, _result: int):
+        """Restablece el estado cuando se cierra el diálogo de timelapse."""
+        self.timelapse_dialog = None
+
+    def _on_timelapse_sessions_changed(self, sessions: list[TimelapseSession]):
+        """Actualiza indicadores cuando cambian las sesiones."""
+        self._update_timelapse_indicator(sessions)
+
+    def _on_timelapse_started(self, session: TimelapseSession):
+        """Maneja el inicio de una nueva sesión de timelapse."""
+        self.status_bar.showMessage(
+            f"Timelapse iniciado: {session.camera_name}",
+            4000,
+        )
+        self._update_timelapse_indicator()
+
+    def _on_timelapse_finished(self, session: TimelapseSession):
+        """Maneja la finalización de una sesión de timelapse."""
+        self.status_bar.showMessage(
+            f"Timelapse finalizado: {session.camera_name}",
+            4000,
+        )
+        self._update_timelapse_indicator()
+
+    def _on_timelapse_error(self, message: str):
+        """Notifica errores ocurridos durante la captura de timelapse."""
+        self.status_bar.showMessage(f"Timelapse: {message}", 5000)
+        QMessageBox.warning(self, "Timelapse", message)
+        self._update_timelapse_indicator()
+
+    def _on_timelapse_exported(self, session_id: str, fmt: str, path: str):
+        """Informa sobre exportaciones completadas."""
+        self.status_bar.showMessage(
+            f"Exportado timelapse {session_id} → {fmt.upper()} ({path})",
+            6000,
+        )
+        self._update_timelapse_indicator()
+
+    def _update_timelapse_indicator(self, sessions: list[TimelapseSession] | None = None):
+        """Refresca los contadores asociados a timelapses activos y guardados."""
+        sessions_list = sessions if sessions is not None else self.controller.get_timelapse_sessions()
+        active_count = len(self.controller.get_active_timelapse_ids())
+        total_count = len(sessions_list)
+
+        self.timelapse_indicator.setText(
+            f"🎞 Timelapse: {active_count} activos / {total_count} guardados"
+        )
+
+        if active_count:
+            self.btn_timelapse.setText(f"🎞 Timelapse ({active_count})")
+        else:
+            self.btn_timelapse.setText("🎞 Timelapse")
+
     def _on_data_loaded(self, success: bool):
         """
         Callback cuando se cargan los datos iniciales.
