@@ -28,7 +28,15 @@ Aplicación de escritorio moderna y robusta para visualizar en tiempo real las c
 - 💾 **Sistema de caché** para optimizar el rendimiento
 - ⚡ **Carga asíncrona** sin bloquear la interfaz
 
-### 🎨 Personalización
+### 🎥 Timelapse
+- 🎬 **Grabación de sesiones** con captura en segundo plano y control por cámara
+- ⏱️ **Intervalos configurables** y seguimiento en tiempo real del progreso
+- 📚 **Biblioteca de sesiones** con gestión de historiales y metadatos clave
+- 🎛️ **Reproducción integrada** con nuevas velocidades (0.05x a 16x)
+- 📦 **Exportación a MP4 o GIF** directamente desde la aplicación
+- 🛡️ **Grabaciones resilientes** ante fallos temporales de red o cámara
+
+### �🎨 Personalización
 - 🌓 **Temas claro y oscuro** con transición suave
 - � **Configuración flexible** mediante archivo config.py
 - 📏 **Interfaz responsive** que se adapta al tamaño de ventana
@@ -257,6 +265,28 @@ Accede a información completa de cualquier cámara:
 - **Claro**: Fondo blanco, ideal para ambientes luminosos
 - **Oscuro**: Fondo oscuro, reduce fatiga visual en ambientes con poca luz
 
+### 🎥 Timelapse
+
+La aplicación incluye un flujo completo para capturar y gestionar timelapses sin salir de la interfaz principal.
+
+#### Crear una Sesión
+1. Abre el menú contextual de cualquier cámara (icono ⋮) y selecciona "🎬 Grabar timelapse".
+2. Configura intervalo de captura, duración máxima y directorio opcional.
+3. Inicia la grabación; la barra lateral mostrará el estado y los frames capturados.
+4. Puedes minimizar el diálogo: la captura continúa en segundo plano.
+
+#### Revisar y Reproducir
+1. Accede a la "Biblioteca de timelapses" desde la barra lateral.
+2. Selecciona una sesión para ver detalles, previsualizar miniaturas y metadatos.
+3. Pulsa "▶ Reproducir" para abrir el reproductor incorporado.
+4. Ajusta velocidad entre 0.05x y 16x o aplica bouclé para revisiones continuas.
+
+#### Exportar y Compartir
+1. Desde la biblioteca, abre el menú de acciones de la sesión.
+2. Elige "Exportar" y selecciona formato MP4 o GIF.
+3. Configura fps de salida, resolución opcional y carpeta destino.
+4. La exportación se ejecuta mediante hilos dedicados, con notificaciones al finalizar.
+
 ## 🏗️ Arquitectura del Proyecto
 
 ### Estructura de Directorios
@@ -271,10 +301,20 @@ Movilidad-de-Malaga-Camaras-de-Trafico/
 │   │   ├── 📄 __init__.py
 │   │   └── 📄 camera.py            # Clase Camera con lógica de datos
 │   │
+│   ├── 📁 timelapse/               # Módulos de gestión de timelapses
+│   │   ├── 📄 __init__.py
+│   │   ├── 📄 manager.py           # Orquestador y persistencia de sesiones
+│   │   ├── 📄 recorder.py          # Captura de frames en segundo plano
+│   │   ├── 📄 exporter.py          # Exportación a MP4/GIF con imageio
+│   │   ├── 📄 player.py            # Reproductor y controles de velocidad
+│   │   └── 📄 models.py            # Entidades Timelapse y utilidades
+│   │
 │   ├── 📁 views/                   # Interfaces gráficas (Capa de presentación)
 │   │   ├── 📄 __init__.py
 │   │   ├── 📄 main_window.py       # Ventana principal de la app
 │   │   ├── 📄 camera_widget.py     # Widgets de visualización de cámaras
+│   │   ├── 📄 timelapse_library.py # Biblioteca y acciones de sesiones
+│   │   ├── 📄 timelapse_start_dialog.py # Asistente de grabación
 │   │   └── 📄 styles.py            # Estilos Qt (temas claro/oscuro)
 │   │
 │   ├── 📁 controllers/             # Controladores (Capa de lógica)
@@ -320,19 +360,37 @@ El proyecto sigue el patrón **Model-View-Controller** para separación de respo
 - Validación de datos robusta
 - Inmutabilidad cuando es posible
 
+#### 🎥 Timelapse (`src/timelapse/`)
+**Responsabilidad**: Gestión integral de sesiones timelapse y su ciclo de vida
+
+- `models.py`: Entidades para sesiones, capturas y estados persistentes
+- `manager.py`: Servicio de alto nivel que coordina grabación, reproducción y biblioteca
+- `recorder.py`: Captura asíncrona con reintentos y notificaciones thread-safe
+- `exporter.py`: Pipeline de exportación a MP4/GIF basado en imageio y FFmpeg
+- `player.py`: Diálogo de reproducción con controles de velocidad y navegación
+
+**Principios:**
+- Aislamiento respecto al resto de la UI mediante señales Qt
+- Operaciones largas siempre en hilos dedicados para no bloquear la interfaz
+- Persistencia simple en disco para facilitar integraciones futuras
+
 #### 👁️ Views (`src/views/`)
 **Responsabilidad**: Interfaz gráfica y experiencia de usuario
 
 - `main_window.py`: Ventana principal
-  - Barra lateral de navegación
+`main_window.py`: Ventana principal
+  - Barra lateral de navegación y accesos a timelapse
   - Área de contenido con vistas lista/cuadrícula
   - Barra de filtros y búsqueda
-  - Gestión de eventos de UI
+  - Gestión de eventos de UI y estado global
 
 - `camera_widget.py`: Componentes visuales de cámaras
   - `CameraWidget`: Tarjeta de cámara para vista cuadrícula
   - `CameraListItem`: Item compacto para vista lista
   - `CameraDetailDialog`: Diálogo de detalles completos
+
+- `timelapse_library.py`: Diálogo maestro para explorar y gestionar sesiones
+- `timelapse_start_dialog.py`: Asistente guiado para configurar nuevas capturas
 
 - `styles.py`: Gestión de temas visuales
   - Estilos Qt para tema claro
@@ -353,6 +411,7 @@ El proyecto sigue el patrón **Model-View-Controller** para separación de respo
   - Gestión de actualización de imágenes
   - Auto-refresco periódico
   - Coordinación entre Models y Views
+  - Integración con `TimelapseManager` para capturas y exportaciones
 
 **Principios:**
 - Orquesta la interacción entre Models y Views
@@ -421,6 +480,8 @@ El proyecto sigue el patrón **Model-View-Controller** para separación de respo
 | PySide6 | 6.6+ | Framework Qt para GUI |
 | requests | 2.31+ | Peticiones HTTP |
 | pandas | 2.0+ | Procesamiento de datos CSV |
+| imageio | 2.34+ | Exportación de timelapses a GIF/MP4 |
+| imageio-ffmpeg | 0.5+ | Backend FFmpeg para codificación de video |
 
 ### 🔒 Principios de Diseño
 
@@ -508,6 +569,30 @@ LOG_FILE = "app.log"
 LOG_TO_CONSOLE = True  # True/False
 ```
 
+### Configuración de Timelapse
+
+```python
+from pathlib import Path
+
+# Directorio raíz para almacenar sesiones
+TIMELAPSE_ROOT = Path("timelapses")
+TIMELAPSE_INDEX_FILE = TIMELAPSE_ROOT / "index.json"
+
+# Parámetros de captura
+TIMELAPSE_DEFAULT_INTERVAL = 5  # segundos
+TIMELAPSE_DEFAULT_DURATION = None  # límite opcional en segundos
+TIMELAPSE_MAX_ACTIVE_RECORDERS = 10
+
+# Reproductor y exportación
+TIMELAPSE_PLAYBACK_SPEEDS = [
+  0.05, 0.1, 0.25, 0.5, 0.75,
+  1.0, 1.5, 2.0, 3.0, 4.0,
+  6.0, 8.0, 12.0, 16.0,
+]
+TIMELAPSE_EXPORT_FORMATS = ["gif", "avi", "mp4", "mpeg"]
+TIMELAPSE_EXPORT_FPS = 8
+```
+
 ### Headers HTTP Personalizados
 
 ```python
@@ -540,6 +625,9 @@ Los datos provienen del **Portal de Datos Abiertos del Ayuntamiento de Málaga**
 
 ## 🔮 Roadmap y Mejoras Futuras
 
+### ✅ Últimas Novedades
+- ✅ **Timelapse completo**: Grabación, biblioteca, reproducción multi-velocidad y exportación MP4/GIF.
+
 ### 🎯 Versión 2.0 (En Planificación)
 - [ ] **Mapa interactivo** con ubicación de cámaras
   - Integración con OpenStreetMap/Leaflet
@@ -551,7 +639,6 @@ Los datos provienen del **Portal de Datos Abiertos del Ayuntamiento de Málaga**
   - Vista de comparación múltiple (2-4 cámaras simultáneas)
   - Modo pantalla completa para cámaras individuales
   - Captura de pantalla de cámaras
-  - Grabación de video en timelapse
 
 ### 📊 Versión 2.5 (Futuro)
 - [ ] **Análisis y estadísticas**

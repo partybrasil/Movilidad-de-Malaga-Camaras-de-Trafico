@@ -82,4 +82,19 @@ TIMELAPSE_DEFAULT_DURATION = None  # segundos
 TIMELAPSE_MAX_ACTIVE_RECORDERS = 10
 TIMELAPSE_EXPORT_FORMATS = ["gif", "avi", "mp4", "mpeg"]
 TIMELAPSE_EXPORT_FPS = 8
-TIMELAPSE_PLAYBACK_SPEEDS = [0.25, 0.5, 1.0, 1.5, 2.0, 4.0]
+TIMELAPSE_PLAYBACK_SPEEDS = [
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    4.0,
+    6.0,
+    8.0,
+    12.0,
+    16.0,
+]

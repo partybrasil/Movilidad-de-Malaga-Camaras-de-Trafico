@@ -97,7 +97,8 @@ class TimelapsePlayerDialog(QDialog):
 
         self.speed_combo = QComboBox()
         for speed in config.TIMELAPSE_PLAYBACK_SPEEDS:
-            self.speed_combo.addItem(f"{speed}x", speed)
+            label = f"{speed:g}x"
+            self.speed_combo.addItem(label, speed)
         default_index = self.speed_combo.findData(1.0)
         if default_index >= 0:
             self.speed_combo.setCurrentIndex(default_index)
@@ -205,7 +206,11 @@ class TimelapsePlayerDialog(QDialog):
         self._update_viewer_pixmap()
 
     def _on_speed_changed(self) -> None:
-        self.speed_factor = float(self.speed_combo.currentData())
+        data = self.speed_combo.currentData()
+        try:
+            self.speed_factor = float(data)
+        except (TypeError, ValueError):
+            self.speed_factor = 1.0
         if self.timer.isActive():
             self._apply_timer_interval()
 
