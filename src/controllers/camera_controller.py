@@ -12,6 +12,7 @@ import logging
 from src.models.camera import Camera
 from src.utils.data_loader import DataLoader
 from src.utils.image_loader import ImageLoader
+from src.utils.favorites_manager import FavoritesManager
 import config
 
 
@@ -28,6 +29,7 @@ class CameraController(QObject):
     cameras_updated = Signal(list)  # Lista de cámaras a mostrar
     loading_progress = Signal(str)  # Mensaje de progreso
     refresh_progress = Signal(int, int)  # (actual, total) para progreso de actualización
+    favorites_changed = Signal()  # Señal cuando cambian los favoritos
     
     def __init__(self):
         """
@@ -37,6 +39,7 @@ class CameraController(QObject):
         
         self.data_loader = DataLoader()
         self.image_loader = ImageLoader()
+        self.favorites_manager = FavoritesManager()
         
         self.all_cameras: List[Camera] = []
         self.filtered_cameras: List[Camera] = []
@@ -247,3 +250,48 @@ class CameraController(QObject):
             cam for cam in self.all_cameras
             if cam.id in self.selected_cameras
         ]
+    
+    def get_favorite_cameras(self) -> List[Camera]:
+        """
+        Obtiene las cámaras marcadas como favoritas.
+        
+        Returns:
+            Lista de objetos Camera favoritas
+        """
+        favorite_ids = self.favorites_manager.get_favorites()
+        return [
+            cam for cam in self.all_cameras
+            if cam.id in favorite_ids
+        ]
+    
+    def toggle_favorite(self, camera_id: int) -> bool:
+        """
+        Alterna el estado de favorito de una cámara.
+        
+        Args:
+            camera_id: ID de la cámara
+            
+        Returns:
+            True si ahora es favorita, False si no
+        """
+        if self.favorites_manager.is_favorite(camera_id):
+            self.favorites_manager.remove_favorite(camera_id)
+            self.favorites_changed.emit()
+            return False
+        else:
+            success = self.favorites_manager.add_favorite(camera_id)
+            if success:
+                self.favorites_changed.emit()
+            return success
+    
+    def is_favorite(self, camera_id: int) -> bool:
+        """
+        Verifica si una cámara es favorita.
+        
+        Args:
+            camera_id: ID de la cámara
+            
+        Returns:
+            True si es favorita
+        """
+        return self.favorites_manager.is_favorite(camera_id)

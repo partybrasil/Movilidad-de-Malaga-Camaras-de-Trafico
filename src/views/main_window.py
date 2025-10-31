@@ -119,6 +119,10 @@ class MainWindow(QMainWindow):
         self.btn_vista_cuadricula.clicked.connect(lambda: self._change_view("cuadricula"))
         layout.addWidget(self.btn_vista_cuadricula)
         
+        self.btn_vista_favoritos = QPushButton("⭐ Vista Favoritos")
+        self.btn_vista_favoritos.clicked.connect(lambda: self._change_view("favoritos"))
+        layout.addWidget(self.btn_vista_favoritos)
+        
         layout.addSpacing(10)
         
         self.btn_actualizar = QPushButton("🔄 Actualizar Todo")
@@ -188,6 +192,10 @@ class MainWindow(QMainWindow):
         # Vista Cuadrícula
         self.grid_view = self._create_grid_view()
         self.stacked_widget.addWidget(self.grid_view)
+        
+        # Vista Favoritos (similar a cuadrícula)
+        self.favorites_view = self._create_favorites_view()
+        self.stacked_widget.addWidget(self.favorites_view)
         
         layout.addWidget(self.stacked_widget, stretch=1)
         
@@ -411,6 +419,30 @@ class MainWindow(QMainWindow):
         
         return scroll
     
+    def _create_favorites_view(self) -> QWidget:
+        """
+        Crea la vista de favoritos (similar a cuadrícula).
+        
+        Returns:
+            Widget de vista favoritos
+        """
+        # Scroll area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        # Contenedor de items en grid
+        self.favorites_container = QWidget()
+        self.favorites_layout = QGridLayout()
+        self.favorites_layout.setSpacing(15)
+        self.favorites_layout.setContentsMargins(15, 15, 15, 15)
+        self.favorites_container.setLayout(self.favorites_layout)
+        
+        scroll.setWidget(self.favorites_container)
+        
+        return scroll
+    
     def _connect_signals(self):
         """
         Conecta las señales del controlador.
@@ -421,6 +453,7 @@ class MainWindow(QMainWindow):
         self.controller.refresh_progress.connect(self._on_refresh_progress)
         self.controller.image_loader.image_loaded.connect(self._on_image_loaded)
         self.controller.image_loader.image_error.connect(self._on_image_error)
+        self.controller.favorites_changed.connect(self._on_favorites_changed)
     
     def _on_data_loaded(self, success: bool):
         """
@@ -460,6 +493,8 @@ class MainWindow(QMainWindow):
         
         if self.current_view_mode == "lista":
             self._populate_list_view(cameras)
+        elif self.current_view_mode == "favoritos":
+            self._populate_favorites_view(cameras)
         else:
             self._populate_grid_view(cameras)
         
@@ -513,6 +548,35 @@ class MainWindow(QMainWindow):
             self.grid_layout.addWidget(camera_widget, row, col)
             self.camera_widgets[camera.id] = camera_widget
     
+    def _populate_favorites_view(self, cameras: list):
+        """
+        Puebla la vista de favoritos con cámaras.
+        
+        Args:
+            cameras: Lista de cámaras
+        """
+        # Calcular columnas dinámicamente
+        cols = self._calculate_grid_columns()
+        
+        # Obtener tamaño de miniatura actual
+        thumbnail_size = config.THUMBNAIL_SIZES[self.thumbnail_zoom_level]
+        
+        for idx, camera in enumerate(cameras):
+            row = idx // cols
+            col = idx % cols
+            
+            camera_widget = CameraWidget(camera, thumbnail_size=thumbnail_size)
+            camera_widget.camera_clicked.connect(self._show_camera_details)
+            camera_widget.image_reload_requested.connect(
+                lambda cam_id: self.controller.load_camera_image(
+                    self._get_camera_by_id(cam_id), 
+                    force_reload=True
+                )
+            )
+            
+            self.favorites_layout.addWidget(camera_widget, row, col)
+            self.camera_widgets[camera.id] = camera_widget
+    
     def _clear_camera_widgets(self):
         """
         Limpia todos los widgets de cámaras.
@@ -526,6 +590,12 @@ class MainWindow(QMainWindow):
         # Limpiar grid
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Limpiar favoritos
+        while self.favorites_layout.count():
+            item = self.favorites_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         
@@ -577,22 +647,29 @@ class MainWindow(QMainWindow):
     
     def _change_view(self, view_mode: str):
         """
-        Cambia entre vista lista y cuadrícula.
+        Cambia entre vistas: lista, cuadrícula o favoritos.
         
         Args:
-            view_mode: "lista" o "cuadricula"
+            view_mode: "lista", "cuadricula" o "favoritos"
         """
         self.current_view_mode = view_mode
         
         if view_mode == "lista":
             self.stacked_widget.setCurrentIndex(0)
             self.zoom_controls.setVisible(False)
-        else:
+            cameras = self.controller.get_filtered_cameras()
+        elif view_mode == "cuadricula":
             self.stacked_widget.setCurrentIndex(1)
             self.zoom_controls.setVisible(True)
+            cameras = self.controller.get_filtered_cameras()
+        elif view_mode == "favoritos":
+            self.stacked_widget.setCurrentIndex(2)
+            self.zoom_controls.setVisible(True)
+            cameras = self.controller.get_favorite_cameras()
+        else:
+            return
         
         # Recargar cámaras en la nueva vista
-        cameras = self.controller.get_filtered_cameras()
         self._update_camera_display(cameras)
         
         logger.info(f"Vista cambiada a: {view_mode}")
@@ -655,9 +732,12 @@ class MainWindow(QMainWindow):
         self.zoom_out_btn.setEnabled(self.thumbnail_zoom_level > 1)
         self.zoom_in_btn.setEnabled(self.thumbnail_zoom_level < 5)
         
-        # Solo actualizar si estamos en vista cuadrícula
+        # Actualizar si estamos en vista cuadrícula o favoritos
         if self.current_view_mode == "cuadricula":
             cameras = self.controller.get_filtered_cameras()
+            self._update_camera_display(cameras)
+        elif self.current_view_mode == "favoritos":
+            cameras = self.controller.get_favorite_cameras()
             self._update_camera_display(cameras)
     
     def _calculate_grid_columns(self) -> int:
@@ -760,9 +840,36 @@ class MainWindow(QMainWindow):
         detail_dialog = CameraDetailDialog(
             camera, 
             self.controller.image_loader,
+            self.controller.favorites_manager,
             self
         )
+        detail_dialog.favorite_toggled.connect(self._on_favorite_toggled)
         detail_dialog.exec()
+    
+    def _on_favorite_toggled(self, camera_id: int, is_favorite: bool):
+        """
+        Callback cuando se cambia el estado de favorito de una cámara.
+        
+        Args:
+            camera_id: ID de la cámara
+            is_favorite: True si ahora es favorita
+        """
+        # Emitir señal de cambio de favoritos
+        self.controller.favorites_changed.emit()
+        
+        # Si estamos en vista favoritos, refrescar
+        if self.current_view_mode == "favoritos":
+            cameras = self.controller.get_favorite_cameras()
+            self._update_camera_display(cameras)
+    
+    def _on_favorites_changed(self):
+        """
+        Callback cuando cambian los favoritos globalmente.
+        """
+        # Si estamos en vista favoritos, refrescar
+        if self.current_view_mode == "favoritos":
+            cameras = self.controller.get_favorite_cameras()
+            self._update_camera_display(cameras)
     
     def _show_about(self):
         """

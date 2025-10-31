@@ -49,6 +49,10 @@ CACHE_MAX_SIZE = 100  # Número máximo de imágenes en caché
 # Tema
 DEFAULT_THEME = "claro"  # "claro" u "oscuro"
 
+# Configuración de favoritos
+MAX_FAVORITES = 9  # Número máximo de cámaras favoritas
+FAVORITES_FILE = "favorites.json"  # Archivo para persistir favoritos
+
 # Logging
 LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_FILE = "app.log"

@@ -283,19 +283,22 @@ class CameraDetailDialog(QDialog):
     
     # Señales
     image_reload_requested = Signal()
+    favorite_toggled = Signal(int, bool)  # camera_id, is_favorite
     
-    def __init__(self, camera: Camera, image_loader, parent=None):
+    def __init__(self, camera: Camera, image_loader, favorites_manager=None, parent=None):
         """
         Inicializa el diálogo de detalle.
         
         Args:
             camera: Objeto Camera a mostrar
             image_loader: Instancia de ImageLoader para cargar imágenes
+            favorites_manager: Gestor de favoritos (opcional)
             parent: Widget padre
         """
         super().__init__(parent)
         self.camera = camera
         self.image_loader = image_loader
+        self.favorites_manager = favorites_manager
         self.current_pixmap = None
         self.is_paused = False
         self.auto_refresh_timer = QTimer()
@@ -326,9 +329,37 @@ class CameraDetailDialog(QDialog):
         info_group = QGroupBox("📍 Información")
         info_layout = QVBoxLayout()
         
+        # Header con nombre y botón favorito
+        header_layout = QHBoxLayout()
+        
         self.name_label = QLabel(f"<b>{self.camera.nombre}</b>")
         self.name_label.setWordWrap(True)
-        info_layout.addWidget(self.name_label)
+        header_layout.addWidget(self.name_label, stretch=1)
+        
+        # Botón de favorito (estrella)
+        if self.favorites_manager:
+            is_favorite = self.favorites_manager.is_favorite(self.camera.id)
+            self.favorite_btn = QPushButton()
+            self.favorite_btn.setCheckable(True)
+            self.favorite_btn.setChecked(is_favorite)
+            self._update_favorite_button()
+            self.favorite_btn.clicked.connect(self._on_favorite_toggled)
+            self.favorite_btn.setFixedSize(50, 50)
+            self.favorite_btn.setCursor(Qt.PointingHandCursor)
+            self.favorite_btn.setStyleSheet("""
+                QPushButton {
+                    font-size: 24pt;
+                    border: none;
+                    background-color: transparent;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 215, 0, 0.1);
+                    border-radius: 5px;
+                }
+            """)
+            header_layout.addWidget(self.favorite_btn)
+        
+        info_layout.addLayout(header_layout)
         
         self.address_label = QLabel(f"Dirección: {self.camera.direccion}")
         self.address_label.setWordWrap(True)
@@ -527,6 +558,56 @@ class CameraDetailDialog(QDialog):
         else:
             minutes = seconds // 60
             return f"{minutes}m"
+    
+    def _update_favorite_button(self):
+        """
+        Actualiza el icono del botón de favorito según su estado.
+        """
+        if not hasattr(self, 'favorite_btn'):
+            return
+        
+        if self.favorite_btn.isChecked():
+            # Estrella rellena (favorito)
+            self.favorite_btn.setText("⭐")
+            self.favorite_btn.setToolTip("Quitar de favoritos")
+        else:
+            # Estrella vacía (no favorito)
+            self.favorite_btn.setText("☆")
+            self.favorite_btn.setToolTip("Añadir a favoritos")
+    
+    def _on_favorite_toggled(self, checked: bool):
+        """
+        Maneja el cambio de estado del favorito.
+        
+        Args:
+            checked: True si está marcado como favorito
+        """
+        if not self.favorites_manager:
+            return
+        
+        if checked:
+            # Intentar añadir a favoritos
+            if self.favorites_manager.add_favorite(self.camera.id):
+                self._update_favorite_button()
+                self.favorite_toggled.emit(self.camera.id, True)
+                logger.info(f"Cámara {self.camera.id} añadida a favoritos")
+            else:
+                # Límite alcanzado, revertir
+                self.favorite_btn.setChecked(False)
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(
+                    self,
+                    "Límite de favoritos",
+                    f"Has alcanzado el límite de {config.MAX_FAVORITES} cámaras favoritas.\n"
+                    "Elimina alguna para añadir una nueva."
+                )
+                logger.warning("Límite de favoritos alcanzado")
+        else:
+            # Quitar de favoritos
+            self.favorites_manager.remove_favorite(self.camera.id)
+            self._update_favorite_button()
+            self.favorite_toggled.emit(self.camera.id, False)
+            logger.info(f"Cámara {self.camera.id} eliminada de favoritos")
     
     def _save_image(self):
         """
