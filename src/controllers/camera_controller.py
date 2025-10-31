@@ -6,12 +6,13 @@ el modelo de datos y las vistas.
 """
 
 from PySide6.QtCore import QObject, Signal, QTimer
-from typing import List, Optional
+from typing import List, Optional, Set, Tuple
 import logging
 
 from src.models.camera import Camera
 from src.utils.data_loader import DataLoader
 from src.utils.image_loader import ImageLoader
+from src.utils.preferences import FavoritesManager
 import config
 
 
@@ -28,6 +29,8 @@ class CameraController(QObject):
     cameras_updated = Signal(list)  # Lista de cámaras a mostrar
     loading_progress = Signal(str)  # Mensaje de progreso
     refresh_progress = Signal(int, int)  # (actual, total) para progreso de actualización
+    favorites_updated = Signal(list)  # Lista de IDs favoritas
+    favorite_toggled = Signal(int, bool)  # camera_id, estado final
     
     def __init__(self):
         """
@@ -37,10 +40,16 @@ class CameraController(QObject):
         
         self.data_loader = DataLoader()
         self.image_loader = ImageLoader()
+        try:
+            self.favorites_manager: Optional[FavoritesManager] = FavoritesManager()
+        except OSError:
+            logger.exception("No fue posible inicializar el almacenamiento de favoritos; se usará modo volátil")
+            self.favorites_manager = None
         
         self.all_cameras: List[Camera] = []
         self.filtered_cameras: List[Camera] = []
         self.selected_cameras: List[int] = []  # IDs de cámaras seleccionadas
+        self.favorite_camera_ids: Set[int] = set()
         
         # Timer para actualización automática
         self.auto_refresh_timer = QTimer()
@@ -59,6 +68,7 @@ class CameraController(QObject):
         if success:
             self.all_cameras = self.data_loader.get_cameras()
             self.filtered_cameras = self.all_cameras.copy()
+            self._initialize_favorites()
             
             self.loading_progress.emit(
                 f"Cargadas {len(self.all_cameras)} cámaras correctamente"
@@ -71,6 +81,7 @@ class CameraController(QObject):
         
         self.data_loaded.emit(success)
         self.cameras_updated.emit(self.filtered_cameras)
+        self.favorites_updated.emit(self.get_favorite_ids())
     
     def get_all_cameras(self) -> List[Camera]:
         """
@@ -247,3 +258,92 @@ class CameraController(QObject):
             cam for cam in self.all_cameras
             if cam.id in self.selected_cameras
         ]
+
+    # ------------------------------------------------------------------
+    # Gestión de favoritos
+    # ------------------------------------------------------------------
+
+    def _initialize_favorites(self) -> None:
+        """Carga favoritos persistidos y los sincroniza con los datos actuales."""
+        stored_ids: List[int] = []
+        if self.favorites_manager:
+            try:
+                stored_ids = self.favorites_manager.load_favorites()
+            except OSError:
+                logger.exception("No fue posible cargar favoritos persistidos")
+
+        available_ids = {camera.id for camera in self.all_cameras}
+        self.favorite_camera_ids = {
+            camera_id for camera_id in stored_ids if camera_id in available_ids
+        }
+
+        if self.favorites_manager and len(self.favorite_camera_ids) != len(stored_ids):
+            # Persistimos limpiar IDs que ya no existen
+            self._persist_favorites()
+
+    def get_favorite_ids(self) -> List[int]:
+        """Retorna los IDs de cámaras favoritas ordenados."""
+        return sorted(self.favorite_camera_ids)
+
+    def get_favorite_cameras(self) -> List[Camera]:
+        """Obtiene los objetos Camera marcados como favoritos."""
+        favorite_map = {camera.id: camera for camera in self.all_cameras}
+        return [favorite_map[camera_id] for camera_id in self.get_favorite_ids() if camera_id in favorite_map]
+
+    def is_favorite(self, camera_id: int) -> bool:
+        """Indica si una cámara está marcada como favorita."""
+        return camera_id in self.favorite_camera_ids
+
+    def can_add_favorite(self) -> bool:
+        """Verifica si se puede añadir una nueva cámara favorita."""
+        return len(self.favorite_camera_ids) < config.MAX_FAVORITES
+
+    def add_favorite(self, camera_id: int) -> Tuple[bool, Optional[str]]:
+        """Marca una cámara como favorita respetando el límite configurado."""
+        if camera_id in self.favorite_camera_ids:
+            return True, None
+
+        if not self.can_add_favorite():
+            message = (
+                f"Solo puedes guardar {config.MAX_FAVORITES} favoritas. "
+                "Desmarca una para añadir otra."
+            )
+            return False, message
+
+        if not any(camera.id == camera_id for camera in self.all_cameras):
+            return False, "La cámara seleccionada ya no está disponible."
+
+        self.favorite_camera_ids.add(camera_id)
+        self._persist_favorites()
+        self.favorites_updated.emit(self.get_favorite_ids())
+        self.favorite_toggled.emit(camera_id, True)
+        logger.info("Cámara %s añadida a favoritos", camera_id)
+        return True, None
+
+    def remove_favorite(self, camera_id: int) -> None:
+        """Elimina una cámara de la lista de favoritas."""
+        if camera_id in self.favorite_camera_ids:
+            self.favorite_camera_ids.remove(camera_id)
+            self._persist_favorites()
+            self.favorites_updated.emit(self.get_favorite_ids())
+            self.favorite_toggled.emit(camera_id, False)
+            logger.info("Cámara %s eliminada de favoritos", camera_id)
+
+    def toggle_favorite(self, camera_id: int) -> Tuple[bool, bool, Optional[str]]:
+        """Alterna el estado de favorito de una cámara."""
+        if self.is_favorite(camera_id):
+            self.remove_favorite(camera_id)
+            return True, False, None
+
+        success, message = self.add_favorite(camera_id)
+        return success, success, message
+
+    def _persist_favorites(self) -> None:
+        """Guarda la lista de favoritos en el almacenamiento persistente."""
+        if not self.favorites_manager:
+            return
+
+        try:
+            self.favorites_manager.save_favorites(self.favorite_camera_ids)
+        except OSError:
+            logger.exception("No fue posible guardar los favoritos en disco")

@@ -6,8 +6,9 @@ y datos de una cámara de tráfico.
 """
 
 from PySide6.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout, QHBoxLayout, 
-    QPushButton, QSizePolicy, QDialog, QGroupBox, QComboBox
+    QWidget, QLabel, QVBoxLayout, QHBoxLayout,
+    QPushButton, QSizePolicy, QDialog, QGroupBox, QComboBox,
+    QMessageBox
 )
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QPixmap, QPainter, QColor
@@ -15,6 +16,11 @@ import logging
 
 from src.models.camera import Camera
 import config
+
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:  # Solo para anotaciones de tipo, evita importaciones circulares en tiempo de ejecución
+    from src.controllers.camera_controller import CameraController
 
 
 logger = logging.getLogger(__name__)
@@ -284,22 +290,26 @@ class CameraDetailDialog(QDialog):
     # Señales
     image_reload_requested = Signal()
     
-    def __init__(self, camera: Camera, image_loader, parent=None):
+    def __init__(self, camera: Camera, image_loader, controller: "CameraController", parent=None):
         """
         Inicializa el diálogo de detalle.
         
         Args:
             camera: Objeto Camera a mostrar
             image_loader: Instancia de ImageLoader para cargar imágenes
+            controller: Controlador principal para gestionar favoritos
             parent: Widget padre
         """
         super().__init__(parent)
         self.camera = camera
         self.image_loader = image_loader
+        self.controller = controller
         self.current_pixmap = None
         self.is_paused = False
         self.auto_refresh_timer = QTimer()
         self.current_refresh_interval = config.IMAGE_REFRESH_INTERVAL  # Guardar intervalo actual
+        self.is_favorite = self.controller.is_favorite(self.camera.id)
+        self.favorite_btn: Optional[QPushButton] = None
         
         self._setup_ui()
         self._connect_signals()
@@ -326,9 +336,20 @@ class CameraDetailDialog(QDialog):
         info_group = QGroupBox("📍 Información")
         info_layout = QVBoxLayout()
         
+        header_layout = QHBoxLayout()
         self.name_label = QLabel(f"<b>{self.camera.nombre}</b>")
         self.name_label.setWordWrap(True)
-        info_layout.addWidget(self.name_label)
+        header_layout.addWidget(self.name_label, stretch=1)
+
+        self.favorite_btn = QPushButton()
+        self.favorite_btn.setCheckable(True)
+        self.favorite_btn.setFlat(True)
+        self.favorite_btn.setCursor(Qt.PointingHandCursor)
+        self.favorite_btn.setFixedSize(34, 34)
+        self.favorite_btn.clicked.connect(self._on_favorite_clicked)
+        header_layout.addWidget(self.favorite_btn)
+        info_layout.addLayout(header_layout)
+        self._update_favorite_button()
         
         self.address_label = QLabel(f"Dirección: {self.camera.direccion}")
         self.address_label.setWordWrap(True)
@@ -443,6 +464,49 @@ class CameraDetailDialog(QDialog):
         """
         self.image_loader.image_loaded.connect(self._on_image_loaded)
         self.image_loader.image_error.connect(self._on_image_error)
+        self.controller.favorite_toggled.connect(self._on_favorite_toggled)
+
+    def _update_favorite_button(self):
+        """Actualiza el aspecto de la estrella de favoritos."""
+        if not self.favorite_btn:
+            return
+
+        if self.is_favorite:
+            self.favorite_btn.setText("★")
+            self.favorite_btn.setChecked(True)
+            self.favorite_btn.setStyleSheet(
+                "font-size: 20pt; color: #f1c40f; border: none;"
+            )
+            self.favorite_btn.setToolTip("Quitar de favoritos")
+        else:
+            self.favorite_btn.setText("☆")
+            self.favorite_btn.setChecked(False)
+            self.favorite_btn.setStyleSheet(
+                "font-size: 20pt; color: #f1c40f; border: none;"
+            )
+            self.favorite_btn.setToolTip("Marcar como favorita")
+
+    def _on_favorite_clicked(self):
+        """Alterna el estado de favorito de la cámara actual."""
+        success, is_favorite, message = self.controller.toggle_favorite(self.camera.id)
+        if not success:
+            QMessageBox.warning(
+                self,
+                "Límite de favoritos",
+                message or "No ha sido posible actualizar tus favoritos."
+            )
+            # Revertir estado visual al actual registrado
+            self._update_favorite_button()
+            return
+
+        self.is_favorite = is_favorite
+        self._update_favorite_button()
+
+    def _on_favorite_toggled(self, camera_id: int, is_favorite: bool):
+        """Sincroniza la estrella cuando el estado cambia desde otro componente."""
+        if camera_id == self.camera.id:
+            self.is_favorite = is_favorite
+            self._update_favorite_button()
     
     def _load_image(self, force_reload=False):
         """
@@ -632,5 +696,9 @@ class CameraDetailDialog(QDialog):
         """
         # Detener el timer al cerrar
         self.auto_refresh_timer.stop()
+        try:
+            self.controller.favorite_toggled.disconnect(self._on_favorite_toggled)
+        except TypeError:
+            pass
         logger.info(f"Cerrando vista detalle de cámara {self.camera.id}")
         event.accept()
