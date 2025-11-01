@@ -4,6 +4,8 @@ Configuración global de la aplicación Cámaras de Tráfico Málaga.
 Este módulo centraliza todas las constantes y configuraciones del proyecto.
 """
 
+from pathlib import Path
+
 # URL del dataset oficial
 CSV_URL = "https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_camarasTrafico-25830.csv"
 
@@ -42,6 +44,11 @@ THUMBNAIL_SIZES = {
 }
 DEFAULT_THUMBNAIL_ZOOM = 3  # Nivel de zoom por defecto (1-5)
 
+# Sistema de favoritos
+MAX_FAVORITES = 20  # Límite de cámaras favoritas (configurable)
+APP_DATA_DIR_NAME = "movilidad_malaga"
+FAVORITES_FILE_NAME = "favorites.json"
+
 # Configuración de caché
 ENABLE_IMAGE_CACHE = True
 CACHE_MAX_SIZE = 100  # Número máximo de imágenes en caché
@@ -65,3 +72,29 @@ CSV_COLUMNS = {
     "acceso": "ACCESO",
     "distrito": "id_distrito"  # Puede no existir
 }
+
+# Timelapse
+TIMELAPSE_ROOT = Path("timelapses")
+TIMELAPSE_INDEX_FILE = TIMELAPSE_ROOT / "index.json"
+TIMELAPSE_FRAME_FORMAT = "jpg"
+TIMELAPSE_DEFAULT_INTERVAL = 5  # segundos
+TIMELAPSE_DEFAULT_DURATION = None  # segundos
+TIMELAPSE_MAX_ACTIVE_RECORDERS = 10
+TIMELAPSE_EXPORT_FORMATS = ["gif", "avi", "mp4", "mpeg"]
+TIMELAPSE_EXPORT_FPS = 8
+TIMELAPSE_PLAYBACK_SPEEDS = [
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    4.0,
+    6.0,
+    8.0,
+    12.0,
+    16.0,
+]

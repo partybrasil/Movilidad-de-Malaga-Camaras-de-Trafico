@@ -83,23 +83,22 @@ class ImageLoadTask(QRunnable):
             
             response.raise_for_status()
             
-            # Verificar que sea una imagen
+            # Obtener contenido y verificar tipo
             content_type = response.headers.get('content-type', '')
             logger.debug(f"[Cámara {self.camera_id}] Content-Type recibido: {content_type}")
-            
+            content = response.content
+
             # Si no es una imagen, puede ser HTML (error del servidor)
             if 'text/html' in content_type.lower():
                 error_msg = "Servidor devolvió HTML en lugar de imagen (posible bloqueo o error)"
                 logger.error(f"[Cámara {self.camera_id}] {error_msg}")
-                logger.debug(f"[Cámara {self.camera_id}] Contenido HTML: {content[:500].decode('utf-8', errors='ignore')}")
+                preview = content[:500].decode('utf-8', errors='ignore') if content else ''
+                logger.debug(f"[Cámara {self.camera_id}] Contenido HTML: {preview}")
                 self.signals.error.emit(self.camera_id, "Sin acceso")
                 return
-            
+
             if 'image' not in content_type.lower() and content_type:
                 logger.warning(f"[Cámara {self.camera_id}] Content-Type no es imagen: {content_type}")
-            
-            # Obtener contenido
-            content = response.content
             logger.debug(f"[Cámara {self.camera_id}] Descargados {len(content)} bytes")
             
             if len(content) == 0:

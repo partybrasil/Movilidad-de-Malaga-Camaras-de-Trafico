@@ -14,11 +14,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 import logging
+from typing import Optional
 
 from src.controllers.camera_controller import CameraController
 from src.views.camera_widget import CameraWidget, CameraListItem, CameraDetailDialog
 from src.views.styles import get_theme
 from src.models.camera import Camera
+from src.views.timelapse_library import TimelapseLibraryDialog
+from src.timelapse.models import TimelapseSession
 import config
 
 
@@ -37,14 +40,20 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         self.controller = CameraController()
-        self.camera_widgets = {}  # Mapeo camera_id -> widget
+        self.camera_widgets_by_view = {
+            "lista": {},
+            "cuadricula": {},
+            "favoritos": {},
+        }
         self.current_view_mode = config.DEFAULT_VIEW_MODE
         self.current_theme = config.DEFAULT_THEME
         self.thumbnail_zoom_level = config.DEFAULT_THUMBNAIL_ZOOM  # Nivel de zoom actual (1-5)
+        self.timelapse_dialog: TimelapseLibraryDialog | None = None
         
         self._setup_ui()
         self._connect_signals()
         self._apply_theme()
+        self._update_timelapse_indicator(self.controller.get_timelapse_sessions())
         
         # Cargar datos iniciales
         self.controller.load_initial_data()
@@ -119,6 +128,10 @@ class MainWindow(QMainWindow):
         self.btn_vista_cuadricula.clicked.connect(lambda: self._change_view("cuadricula"))
         layout.addWidget(self.btn_vista_cuadricula)
         
+        self.btn_vista_favoritos = QPushButton("⭐ Vista Favoritos")
+        self.btn_vista_favoritos.clicked.connect(lambda: self._change_view("favoritos"))
+        layout.addWidget(self.btn_vista_favoritos)
+        
         layout.addSpacing(10)
         
         self.btn_actualizar = QPushButton("🔄 Actualizar Todo")
@@ -129,7 +142,13 @@ class MainWindow(QMainWindow):
         self.btn_auto_refresh.setCheckable(True)
         self.btn_auto_refresh.clicked.connect(self._toggle_auto_refresh)
         layout.addWidget(self.btn_auto_refresh)
-        
+
+        layout.addSpacing(10)
+
+        self.btn_timelapse = QPushButton("🎞 Timelapse")
+        self.btn_timelapse.clicked.connect(self._open_timelapse_library)
+        layout.addWidget(self.btn_timelapse)
+
         layout.addSpacing(10)
         
         self.btn_tema = QPushButton("🌓 Cambiar Tema")
@@ -188,6 +207,10 @@ class MainWindow(QMainWindow):
         # Vista Cuadrícula
         self.grid_view = self._create_grid_view()
         self.stacked_widget.addWidget(self.grid_view)
+
+        # Vista Favoritos
+        self.favorites_view = self._create_favorites_view()
+        self.stacked_widget.addWidget(self.favorites_view)
         
         layout.addWidget(self.stacked_widget, stretch=1)
         
@@ -232,6 +255,19 @@ class MainWindow(QMainWindow):
             margin-right: 10px;
         """)
         layout.addWidget(self.auto_refresh_indicator)
+
+        # Indicador de timelapse
+        self.timelapse_indicator = QLabel("🎞 Timelapse: 0 activos / 0 guardados")
+        self.timelapse_indicator.setStyleSheet("""
+            font-size: 10pt;
+            font-weight: bold;
+            padding: 6px 10px;
+            background-color: rgba(241, 196, 15, 0.2);
+            border-radius: 5px;
+            color: #f39c12;
+            margin-right: 10px;
+        """)
+        layout.addWidget(self.timelapse_indicator)
         
         # Contador de cámaras
         self.camera_count_label = QLabel("0 cámaras")
@@ -410,6 +446,41 @@ class MainWindow(QMainWindow):
         scroll.setWidget(self.grid_container)
         
         return scroll
+
+    def _create_favorites_view(self) -> QWidget:
+        """Crea la vista de cámaras favoritas en formato cuadrícula."""
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.favorites_container = QWidget()
+        container_layout = QVBoxLayout()
+        container_layout.setContentsMargins(15, 15, 15, 15)
+        container_layout.setSpacing(10)
+
+        self.favorites_placeholder = QLabel(
+            "Añade cámaras desde la ⭐ en los detalles para verlas aquí."
+        )
+        self.favorites_placeholder.setAlignment(Qt.AlignCenter)
+        self.favorites_placeholder.setStyleSheet(
+            "color: #7f8c8d; font-style: italic;"
+        )
+        container_layout.addWidget(self.favorites_placeholder)
+
+        self.favorites_grid_widget = QWidget()
+        self.favorites_layout = QGridLayout()
+        self.favorites_layout.setSpacing(15)
+        self.favorites_layout.setContentsMargins(0, 0, 0, 0)
+        self.favorites_grid_widget.setLayout(self.favorites_layout)
+        container_layout.addWidget(self.favorites_grid_widget)
+
+        self.favorites_container.setLayout(container_layout)
+        scroll.setWidget(self.favorites_container)
+
+        self.favorites_grid_widget.hide()
+
+        return scroll
     
     def _connect_signals(self):
         """
@@ -421,7 +492,78 @@ class MainWindow(QMainWindow):
         self.controller.refresh_progress.connect(self._on_refresh_progress)
         self.controller.image_loader.image_loaded.connect(self._on_image_loaded)
         self.controller.image_loader.image_error.connect(self._on_image_error)
+        self.controller.favorites_updated.connect(self._on_favorites_updated)
+        self.controller.favorite_toggled.connect(self._on_favorite_toggled)
+        self.controller.timelapse_sessions_changed.connect(self._on_timelapse_sessions_changed)
+        self.controller.timelapse_session_started.connect(self._on_timelapse_started)
+        self.controller.timelapse_session_finished.connect(self._on_timelapse_finished)
+        self.controller.timelapse_error.connect(self._on_timelapse_error)
+        self.controller.timelapse_export_completed.connect(self._on_timelapse_exported)
     
+    def _open_timelapse_library(self):
+        """Abre el diálogo de gestión de timelapses."""
+        if self.timelapse_dialog and self.timelapse_dialog.isVisible():
+            self.timelapse_dialog.raise_()
+            self.timelapse_dialog.activateWindow()
+            return
+
+        self.timelapse_dialog = TimelapseLibraryDialog(self.controller, self)
+        self.timelapse_dialog.finished.connect(self._on_timelapse_dialog_closed)
+        self.timelapse_dialog.show()
+
+    def _on_timelapse_dialog_closed(self, _result: int):
+        """Restablece el estado cuando se cierra el diálogo de timelapse."""
+        self.timelapse_dialog = None
+
+    def _on_timelapse_sessions_changed(self, sessions: list[TimelapseSession]):
+        """Actualiza indicadores cuando cambian las sesiones."""
+        self._update_timelapse_indicator(sessions)
+
+    def _on_timelapse_started(self, session: TimelapseSession):
+        """Maneja el inicio de una nueva sesión de timelapse."""
+        self.status_bar.showMessage(
+            f"Timelapse iniciado: {session.camera_name}",
+            4000,
+        )
+        self._update_timelapse_indicator()
+
+    def _on_timelapse_finished(self, session: TimelapseSession):
+        """Maneja la finalización de una sesión de timelapse."""
+        self.status_bar.showMessage(
+            f"Timelapse finalizado: {session.camera_name}",
+            4000,
+        )
+        self._update_timelapse_indicator()
+
+    def _on_timelapse_error(self, message: str):
+        """Notifica errores ocurridos durante la captura de timelapse."""
+        self.status_bar.showMessage(f"Timelapse: {message}", 5000)
+        QMessageBox.warning(self, "Timelapse", message)
+        self._update_timelapse_indicator()
+
+    def _on_timelapse_exported(self, session_id: str, fmt: str, path: str):
+        """Informa sobre exportaciones completadas."""
+        self.status_bar.showMessage(
+            f"Exportado timelapse {session_id} → {fmt.upper()} ({path})",
+            6000,
+        )
+        self._update_timelapse_indicator()
+
+    def _update_timelapse_indicator(self, sessions: list[TimelapseSession] | None = None):
+        """Refresca los contadores asociados a timelapses activos y guardados."""
+        sessions_list = sessions if sessions is not None else self.controller.get_timelapse_sessions()
+        active_count = len(self.controller.get_active_timelapse_ids())
+        total_count = len(sessions_list)
+
+        self.timelapse_indicator.setText(
+            f"🎞 Timelapse: {active_count} activos / {total_count} guardados"
+        )
+
+        if active_count:
+            self.btn_timelapse.setText(f"🎞 Timelapse ({active_count})")
+        else:
+            self.btn_timelapse.setText("🎞 Timelapse")
+
     def _on_data_loaded(self, success: bool):
         """
         Callback cuando se cargan los datos iniciales.
@@ -452,18 +594,25 @@ class MainWindow(QMainWindow):
         Args:
             cameras: Lista de objetos Camera a mostrar
         """
-        # Limpiar widgets existentes
-        self._clear_camera_widgets()
-        
-        # Actualizar contador
+        if self.current_view_mode == "favoritos":
+            favorites = self.controller.get_favorite_cameras()
+            self._populate_favorites_view(favorites)
+            count = len(favorites)
+            label = "favoritas" if count != 1 else "favorita"
+            self.camera_count_label.setText(f"{count} {label}")
+            return
+
+        view_key = self.current_view_mode
+        self._clear_camera_widgets(view_key)
+
+        # Actualizar contador general
         self.camera_count_label.setText(f"{len(cameras)} cámaras")
-        
-        if self.current_view_mode == "lista":
+
+        if view_key == "lista":
             self._populate_list_view(cameras)
         else:
             self._populate_grid_view(cameras)
-        
-        # Cargar imágenes
+
         for camera in cameras[:20]:  # Limitar inicial para rendimiento
             self.controller.load_camera_image(camera)
     
@@ -477,11 +626,9 @@ class MainWindow(QMainWindow):
         for camera in cameras:
             item_widget = CameraListItem(camera)
             item_widget.camera_clicked.connect(self._show_camera_details)
-            
             self.list_layout.addWidget(item_widget)
-            self.camera_widgets[camera.id] = item_widget
-        
-        # Espaciador al final
+            self.camera_widgets_by_view["lista"][camera.id] = item_widget
+
         self.list_layout.addStretch()
     
     def _populate_grid_view(self, cameras: list):
@@ -491,45 +638,104 @@ class MainWindow(QMainWindow):
         Args:
             cameras: Lista de cámaras
         """
-        # Calcular columnas dinámicamente
-        cols = self._calculate_grid_columns()
-        
-        # Obtener tamaño de miniatura actual
+        cols = self._calculate_grid_columns(self.grid_view)
         thumbnail_size = config.THUMBNAIL_SIZES[self.thumbnail_zoom_level]
-        
+
         for idx, camera in enumerate(cameras):
             row = idx // cols
             col = idx % cols
-            
+
             camera_widget = CameraWidget(camera, thumbnail_size=thumbnail_size)
             camera_widget.camera_clicked.connect(self._show_camera_details)
-            camera_widget.image_reload_requested.connect(
-                lambda cam_id: self.controller.load_camera_image(
-                    self._get_camera_by_id(cam_id), 
-                    force_reload=True
-                )
-            )
-            
+            camera_widget.image_reload_requested.connect(self._request_image_reload)
+
             self.grid_layout.addWidget(camera_widget, row, col)
-            self.camera_widgets[camera.id] = camera_widget
+            self.camera_widgets_by_view["cuadricula"][camera.id] = camera_widget
+
+    def _populate_favorites_view(self, cameras: list[Camera]):
+        """Genera la cuadrícula de cámaras favoritas."""
+        self._clear_camera_widgets("favoritos")
+
+        if not cameras:
+            return
+
+        self.favorites_placeholder.hide()
+        self.favorites_grid_widget.show()
+
+        cols = self._calculate_grid_columns(self.favorites_view)
+        if cols < 1:
+            cols = 1
+
+        thumbnail_size = config.THUMBNAIL_SIZES[self.thumbnail_zoom_level]
+
+        for idx, camera in enumerate(cameras):
+            row = idx // cols
+            col = idx % cols
+
+            camera_widget = CameraWidget(camera, thumbnail_size=thumbnail_size)
+            camera_widget.camera_clicked.connect(self._show_camera_details)
+            camera_widget.image_reload_requested.connect(self._request_image_reload)
+
+            self.favorites_layout.addWidget(camera_widget, row, col)
+            self.camera_widgets_by_view["favoritos"][camera.id] = camera_widget
+            # Cargar imagen siempre: pocas cámaras y asegura miniaturas frescas
+            self.controller.load_camera_image(camera)
     
-    def _clear_camera_widgets(self):
-        """
-        Limpia todos los widgets de cámaras.
-        """
-        # Limpiar lista
-        while self.list_layout.count():
-            item = self.list_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        
-        # Limpiar grid
-        while self.grid_layout.count():
-            item = self.grid_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-        
-        self.camera_widgets.clear()
+    def _request_image_reload(self, camera_id: int):
+        """Solicita recargar la imagen de una cámara concreta."""
+        camera = self._get_camera_by_id(camera_id)
+        if camera:
+            self.controller.load_camera_image(camera, force_reload=True)
+
+    def _relayout_grid(self, view_key: str, layout: QGridLayout, scroll_area: QScrollArea):
+        """Reorganiza los widgets existentes según el ancho disponible."""
+        widgets_map = self.camera_widgets_by_view.get(view_key, {})
+        if not widgets_map:
+            if view_key == "favoritos":
+                self.favorites_placeholder.show()
+                self.favorites_grid_widget.hide()
+            return
+
+        while layout.count():
+            layout.takeAt(0)
+
+        columns = self._calculate_grid_columns(scroll_area)
+        columns = max(columns, 1)
+
+        if view_key == "favoritos":
+            self.favorites_placeholder.hide()
+            self.favorites_grid_widget.show()
+
+        for idx, widget in enumerate(widgets_map.values()):
+            row = idx // columns
+            col = idx % columns
+            layout.addWidget(widget, row, col)
+
+    def _clear_camera_widgets(self, view: str | None = None):
+        """Limpia los widgets asociados a la vista indicada."""
+        targets = [view] if view else ["lista", "cuadricula", "favoritos"]
+
+        for target in targets:
+            if target == "lista":
+                while self.list_layout.count():
+                    item = self.list_layout.takeAt(0)
+                    if item.widget():
+                        item.widget().deleteLater()
+                self.camera_widgets_by_view["lista"].clear()
+            elif target == "cuadricula":
+                while self.grid_layout.count():
+                    item = self.grid_layout.takeAt(0)
+                    if item.widget():
+                        item.widget().deleteLater()
+                self.camera_widgets_by_view["cuadricula"].clear()
+            elif target == "favoritos":
+                while self.favorites_layout.count():
+                    item = self.favorites_layout.takeAt(0)
+                    if item.widget():
+                        item.widget().deleteLater()
+                self.camera_widgets_by_view["favoritos"].clear()
+                self.favorites_grid_widget.hide()
+                self.favorites_placeholder.show()
     
     def _on_image_loaded(self, camera_id: int, pixmap):
         """
@@ -539,9 +745,8 @@ class MainWindow(QMainWindow):
             camera_id: ID de la cámara
             pixmap: Imagen cargada
         """
-        if camera_id in self.camera_widgets:
-            widget = self.camera_widgets[camera_id]
-            
+        for widgets in self.camera_widgets_by_view.values():
+            widget = widgets.get(camera_id)
             if isinstance(widget, CameraWidget):
                 widget.set_image(pixmap)
             elif isinstance(widget, CameraListItem):
@@ -555,11 +760,33 @@ class MainWindow(QMainWindow):
             camera_id: ID de la cámara
             error_msg: Mensaje de error
         """
-        if camera_id in self.camera_widgets:
-            widget = self.camera_widgets[camera_id]
-            
+        for widgets in self.camera_widgets_by_view.values():
+            widget = widgets.get(camera_id)
             if isinstance(widget, CameraWidget):
                 widget.set_error("Error al cargar")
+
+    def _on_favorites_updated(self, favorite_ids: list[int]):
+        """Actualiza la UI cuando cambia la lista de favoritos."""
+        count = len(favorite_ids)
+        if count:
+            self.btn_vista_favoritos.setText(f"⭐ Vista Favoritos ({count})")
+        else:
+            self.btn_vista_favoritos.setText("⭐ Vista Favoritos")
+
+        favorites = self.controller.get_favorite_cameras()
+        self._populate_favorites_view(favorites)
+
+        if self.current_view_mode == "favoritos":
+            label = "favoritas" if count != 1 else "favorita"
+            self.camera_count_label.setText(f"{count} {label}")
+
+    def _on_favorite_toggled(self, camera_id: int, is_favorite: bool):
+        """Muestra retroalimentación cuando cambia el estado de favorito."""
+        camera = self._get_camera_by_id(camera_id)
+        if not camera:
+            return
+        action = "añadida a favoritos" if is_favorite else "retirada de favoritos"
+        self.status_bar.showMessage(f"{camera.nombre} {action}", 3000)
     
     def _on_refresh_progress(self, current: int, total: int):
         """
@@ -576,25 +803,31 @@ class MainWindow(QMainWindow):
             logger.info("Actualización completa de todas las cámaras")
     
     def _change_view(self, view_mode: str):
-        """
-        Cambia entre vista lista y cuadrícula.
-        
-        Args:
-            view_mode: "lista" o "cuadricula"
-        """
+        """Cambia entre las vistas lista, cuadrícula y favoritos."""
         self.current_view_mode = view_mode
-        
+
         if view_mode == "lista":
             self.stacked_widget.setCurrentIndex(0)
             self.zoom_controls.setVisible(False)
-        else:
+            cameras = self.controller.get_filtered_cameras()
+            self._update_camera_display(cameras)
+        elif view_mode == "cuadricula":
             self.stacked_widget.setCurrentIndex(1)
             self.zoom_controls.setVisible(True)
-        
-        # Recargar cámaras en la nueva vista
-        cameras = self.controller.get_filtered_cameras()
-        self._update_camera_display(cameras)
-        
+            cameras = self.controller.get_filtered_cameras()
+            self._update_camera_display(cameras)
+        elif view_mode == "favoritos":
+            self.stacked_widget.setCurrentIndex(2)
+            self.zoom_controls.setVisible(True)
+            favorites = self.controller.get_favorite_cameras()
+            self._populate_favorites_view(favorites)
+            count = len(favorites)
+            label = "favoritas" if count != 1 else "favorita"
+            self.camera_count_label.setText(f"{count} {label}")
+        else:
+            logger.warning("Vista desconocida solicitada: %s", view_mode)
+            return
+
         logger.info(f"Vista cambiada a: {view_mode}")
     
     def _on_search_changed(self, text: str):
@@ -655,31 +888,36 @@ class MainWindow(QMainWindow):
         self.zoom_out_btn.setEnabled(self.thumbnail_zoom_level > 1)
         self.zoom_in_btn.setEnabled(self.thumbnail_zoom_level < 5)
         
-        # Solo actualizar si estamos en vista cuadrícula
         if self.current_view_mode == "cuadricula":
             cameras = self.controller.get_filtered_cameras()
             self._update_camera_display(cameras)
+        elif self.current_view_mode == "favoritos":
+            favorites = self.controller.get_favorite_cameras()
+            self._populate_favorites_view(favorites)
     
-    def _calculate_grid_columns(self) -> int:
-        """
-        Calcula el número óptimo de columnas según el tamaño de miniatura y ancho de ventana.
-        
-        Returns:
-            Número de columnas para la cuadrícula
-        """
-        # Obtener tamaño de miniatura actual
+    def _calculate_grid_columns(self, scroll_area: Optional[QWidget] = None) -> int:
+        """Calcula el número óptimo de columnas para una cuadrícula dada."""
         thumbnail_width, _ = config.THUMBNAIL_SIZES[self.thumbnail_zoom_level]
-        
-        # Ancho disponible (restar márgenes y scrollbar)
-        available_width = self.grid_view.width() - 50  # Margen extra para scrollbar
-        
-        # Calcular columnas (mínimo 1, máximo 6)
-        spacing = 15  # Espacio entre widgets
-        widget_total_width = thumbnail_width + 30  # +30 por padding del widget
-        
+        target = scroll_area or self.grid_view
+
+        if hasattr(target, "viewport"):
+            available_width = target.viewport().width() - 30
+        else:
+            available_width = target.width() - 30
+
+        available_width = max(available_width, thumbnail_width + 30)
+
+        spacing = 15
+        widget_total_width = thumbnail_width + 30
+
         columns = max(1, min(6, available_width // (widget_total_width + spacing)))
-        
-        logger.debug(f"Calculadas {columns} columnas para ancho {available_width}px con miniaturas de {thumbnail_width}px")
+
+        logger.debug(
+            "Calculadas %s columnas para ancho %spx con miniaturas de %spx",
+            columns,
+            available_width,
+            thumbnail_width,
+        )
         return columns
     
     def _refresh_all(self):
@@ -760,6 +998,7 @@ class MainWindow(QMainWindow):
         detail_dialog = CameraDetailDialog(
             camera, 
             self.controller.image_loader,
+            self.controller,
             self
         )
         detail_dialog.exec()
@@ -816,3 +1055,11 @@ class MainWindow(QMainWindow):
         self.controller.stop_auto_refresh()
         logger.info("Aplicación cerrada")
         event.accept()
+
+    def resizeEvent(self, event):
+        """Ajusta las cuadrículas cuando cambia el tamaño de la ventana."""
+        super().resizeEvent(event)
+        if self.current_view_mode == "cuadricula":
+            self._relayout_grid("cuadricula", self.grid_layout, self.grid_view)
+        elif self.current_view_mode == "favoritos":
+            self._relayout_grid("favoritos", self.favorites_layout, self.favorites_view)
