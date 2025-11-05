@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_6f0f2bf728529eda385bb511f7a4feb1 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+</head>
+<body>
+    
+    
+        <div style="position: fixed; 
+                    top: 10px; left: 50px; width: 400px; height: 80px; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:16px; padding: 10px; border-radius: 5px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+            <h3 style="margin: 0; color: #e74c3c;">🚦 Cámaras de Tráfico - Málaga</h3>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #7f8c8d;">
+                Vista de Mapa Interactivo • Click en los pins para más info
+            </p>
+        </div>
+    
+    
+    <div style="
+        position: fixed; 
+        bottom: 50px; 
+        right: 50px; 
+        width: 180px; 
+        background: white; 
+        border: 2px solid #ccc; 
+        border-radius: 8px; 
+        padding: 12px;
+        font-family: Arial, sans-serif;
+        z-index: 1000;
+        box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+    ">
+        <h4 style="margin: 0 0 12px 0; font-size: 15px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px;">
+            📍 Leyenda de Distritos
+        </h4>
+        <div style="margin: 3px 0;"><span style="background: #FF6B6B; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 1</span></div><div style="margin: 3px 0;"><span style="background: #74B9FF; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 10</span></div><div style="margin: 3px 0;"><span style="background: #55EFC4; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 11</span></div><div style="margin: 3px 0;"><span style="background: #4ECDC4; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 2</span></div><div style="margin: 3px 0;"><span style="background: #45B7D1; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 3</span></div><div style="margin: 3px 0;"><span style="background: #96CEB4; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 4</span></div><div style="margin: 3px 0;"><span style="background: #FFEAA7; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 5</span></div><div style="margin: 3px 0;"><span style="background: #DFE6E9; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 6</span></div><div style="margin: 3px 0;"><span style="background: #A29BFE; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 7</span></div><div style="margin: 3px 0;"><span style="background: #FD79A8; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 8</span></div><div style="margin: 3px 0;"><span style="background: #FDCB6E; width: 15px; height: 15px; display: inline-block; margin-right: 8px; border-radius: 3px; border: 1px solid #ddd;"></span><span style="font-size: 13px;">Distrito 9</span></div>
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1; font-size: 10px; color: #7f8c8d;">
+            11 distritos de Málaga
+        </div>
+    </div>
+    
+    
+            <div class="folium-map" id="map_6f0f2bf728529eda385bb511f7a4feb1" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_6f0f2bf728529eda385bb511f7a4feb1 = L.map(
+                "map_6f0f2bf728529eda385bb511f7a4feb1",
+                {
+                    center: [36.7213, -4.4214],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+            L.control.scale().addTo(map_6f0f2bf728529eda385bb511f7a4feb1);
+
+            
+
+        
+    
+            var tile_layer_28440b7ca6a895a19299ddcb995cdecd = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_28440b7ca6a895a19299ddcb995cdecd.addTo(map_6f0f2bf728529eda385bb511f7a4feb1);
+        
+    
+            var marker_cluster_e7355b11a536785c21847ca525b3d1c3 = L.markerClusterGroup(
+                {
+}
+            );
+        
+    
+            var marker_e4fcdad933b755fc0513d4490345034b = L.marker(
+                [36.724216496857736, -4.405391640988742],
+                {
+}
+            ).addTo(marker_cluster_e7355b11a536785c21847ca525b3d1c3);
+        
+    
+            var icon_6c1e4e0b97fb757b923838b77408a079 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "video-camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_6854aaebba3014cf630e4829faf37193 = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_fd0825e62362a97fb1be3bb747437666 = $(`<div id="html_fd0825e62362a97fb1be3bb747437666" style="width: 100.0%; height: 100.0%;">         <div style="width: 280px; font-family: Arial, sans-serif;">             <h4 style="margin: 0 0 10px 0; color: #FF6B6B; border-bottom: 2px solid #FF6B6B; padding-bottom: 5px;">                 📹 TV103-A-Centro             </h4>             <p style="margin: 8px 0;"><strong>📍 Ubicación:</strong><br>Alameda Principal - Centro Histórico</p>             <p style="margin: 8px 0;"><strong>🏛️ Distrito:</strong> Distrito 1</p>             <p style="margin: 8px 0;"><strong>♿ Acceso:</strong> PMR</p>                          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ecf0f1;">                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/camaras/1" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         🔗 Ver en web oficial →                     </a>                 </p>                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/img/cam1.jpg" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         📷 Ver imagen actual →                     </a>                 </p>             </div>                          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1;                          font-size: 10px; color: #95a5a6;">                 <strong>Datos técnicos:</strong><br>                 ID: 1 | UTM: 374500, 4065200<br>                 WGS84: 36.724216°N, -4.405392°W             </div>         </div>         </div>`)[0];
+                popup_6854aaebba3014cf630e4829faf37193.setContent(html_fd0825e62362a97fb1be3bb747437666);
+            
+        
+
+        marker_e4fcdad933b755fc0513d4490345034b.bindPopup(popup_6854aaebba3014cf630e4829faf37193)
+        ;
+
+        
+    
+    
+            marker_e4fcdad933b755fc0513d4490345034b.bindTooltip(
+                `<div>
+                     <strong>TV103-A-Centro</strong><br>Alameda Principal - Centro Histórico
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e4fcdad933b755fc0513d4490345034b.setIcon(icon_6c1e4e0b97fb757b923838b77408a079);
+            
+    
+            var marker_0d87d7bc98230aad617ff1ca5f674e28 = L.marker(
+                [36.72078260539554, -4.390772699982061],
+                {
+}
+            ).addTo(marker_cluster_e7355b11a536785c21847ca525b3d1c3);
+        
+    
+            var icon_ea1d0e7e0414bfbc47f93b3bf0be2c80 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "video-camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_c015d4c9048a9496c22f89b36ed6c37c = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_42cf73cc4e89829b6b3a6a0e89fca099 = $(`<div id="html_42cf73cc4e89829b6b3a6a0e89fca099" style="width: 100.0%; height: 100.0%;">         <div style="width: 280px; font-family: Arial, sans-serif;">             <h4 style="margin: 0 0 10px 0; color: #4ECDC4; border-bottom: 2px solid #4ECDC4; padding-bottom: 5px;">                 📹 TV104-B-Malagueta             </h4>             <p style="margin: 8px 0;"><strong>📍 Ubicación:</strong><br>Paseo Marítimo Pablo Ruiz Picasso</p>             <p style="margin: 8px 0;"><strong>🏛️ Distrito:</strong> Distrito 2</p>             <p style="margin: 8px 0;"><strong>♿ Acceso:</strong> PMR</p>                          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ecf0f1;">                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/camaras/2" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         🔗 Ver en web oficial →                     </a>                 </p>                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/img/cam2.jpg" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         📷 Ver imagen actual →                     </a>                 </p>             </div>                          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1;                          font-size: 10px; color: #95a5a6;">                 <strong>Datos técnicos:</strong><br>                 ID: 2 | UTM: 375800, 4064800<br>                 WGS84: 36.720783°N, -4.390773°W             </div>         </div>         </div>`)[0];
+                popup_c015d4c9048a9496c22f89b36ed6c37c.setContent(html_42cf73cc4e89829b6b3a6a0e89fca099);
+            
+        
+
+        marker_0d87d7bc98230aad617ff1ca5f674e28.bindPopup(popup_c015d4c9048a9496c22f89b36ed6c37c)
+        ;
+
+        
+    
+    
+            marker_0d87d7bc98230aad617ff1ca5f674e28.bindTooltip(
+                `<div>
+                     <strong>TV104-B-Malagueta</strong><br>Paseo Marítimo Pablo Ruiz Picasso
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0d87d7bc98230aad617ff1ca5f674e28.setIcon(icon_ea1d0e7e0414bfbc47f93b3bf0be2c80);
+            
+    
+            var marker_efd40a52e71581dddaff693c3f369d61 = L.marker(
+                [36.71786830121433, -4.408635000139877],
+                {
+}
+            ).addTo(marker_cluster_e7355b11a536785c21847ca525b3d1c3);
+        
+    
+            var icon_4b48ff141d04dd6497c5ebb86cab2799 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "video-camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_6775a4396ac0d98101c96f8a4ad25be6 = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_f78cb0a32db5a8d15f7b08e92a43bb9e = $(`<div id="html_f78cb0a32db5a8d15f7b08e92a43bb9e" style="width: 100.0%; height: 100.0%;">         <div style="width: 280px; font-family: Arial, sans-serif;">             <h4 style="margin: 0 0 10px 0; color: #FF6B6B; border-bottom: 2px solid #FF6B6B; padding-bottom: 5px;">                 📹 TV105-C-Puerto             </h4>             <p style="margin: 8px 0;"><strong>📍 Ubicación:</strong><br>Muelle Heredia - Puerto de Málaga</p>             <p style="margin: 8px 0;"><strong>🏛️ Distrito:</strong> Distrito 1</p>                                       <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ecf0f1;">                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/camaras/3" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         🔗 Ver en web oficial →                     </a>                 </p>                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/img/cam3.jpg" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         📷 Ver imagen actual →                     </a>                 </p>             </div>                          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1;                          font-size: 10px; color: #95a5a6;">                 <strong>Datos técnicos:</strong><br>                 ID: 3 | UTM: 374200, 4064500<br>                 WGS84: 36.717868°N, -4.408635°W             </div>         </div>         </div>`)[0];
+                popup_6775a4396ac0d98101c96f8a4ad25be6.setContent(html_f78cb0a32db5a8d15f7b08e92a43bb9e);
+            
+        
+
+        marker_efd40a52e71581dddaff693c3f369d61.bindPopup(popup_6775a4396ac0d98101c96f8a4ad25be6)
+        ;
+
+        
+    
+    
+            marker_efd40a52e71581dddaff693c3f369d61.bindTooltip(
+                `<div>
+                     <strong>TV105-C-Puerto</strong><br>Muelle Heredia - Puerto de Málaga
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_efd40a52e71581dddaff693c3f369d61.setIcon(icon_4b48ff141d04dd6497c5ebb86cab2799);
+            
+    
+            var marker_85973c4d0ec97d44c735c02a8f3a4d79 = L.marker(
+                [36.75771848929191, -4.467616559535293],
+                {
+}
+            ).addTo(marker_cluster_e7355b11a536785c21847ca525b3d1c3);
+        
+    
+            var icon_d5187b732a137c3ae9dc879d9fc8543a = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "video-camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_954ef1fbf7432aa026ea9d17a87704c6 = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_e0d42b6d82948cc0f9014c12e1de86b9 = $(`<div id="html_e0d42b6d82948cc0f9014c12e1de86b9" style="width: 100.0%; height: 100.0%;">         <div style="width: 280px; font-family: Arial, sans-serif;">             <h4 style="margin: 0 0 10px 0; color: #55EFC4; border-bottom: 2px solid #55EFC4; padding-bottom: 5px;">                 📹 TV106-D-Teatinos             </h4>             <p style="margin: 8px 0;"><strong>📍 Ubicación:</strong><br>Campus de Teatinos - Universidad</p>             <p style="margin: 8px 0;"><strong>🏛️ Distrito:</strong> Distrito 11</p>             <p style="margin: 8px 0;"><strong>♿ Acceso:</strong> PMR</p>                          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ecf0f1;">                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/camaras/4" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         🔗 Ver en web oficial →                     </a>                 </p>                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/img/cam4.jpg" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         📷 Ver imagen actual →                     </a>                 </p>             </div>                          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1;                          font-size: 10px; color: #95a5a6;">                 <strong>Datos técnicos:</strong><br>                 ID: 4 | UTM: 369000, 4069000<br>                 WGS84: 36.757718°N, -4.467617°W             </div>         </div>         </div>`)[0];
+                popup_954ef1fbf7432aa026ea9d17a87704c6.setContent(html_e0d42b6d82948cc0f9014c12e1de86b9);
+            
+        
+
+        marker_85973c4d0ec97d44c735c02a8f3a4d79.bindPopup(popup_954ef1fbf7432aa026ea9d17a87704c6)
+        ;
+
+        
+    
+    
+            marker_85973c4d0ec97d44c735c02a8f3a4d79.bindTooltip(
+                `<div>
+                     <strong>TV106-D-Teatinos</strong><br>Campus de Teatinos - Universidad
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_85973c4d0ec97d44c735c02a8f3a4d79.setIcon(icon_d5187b732a137c3ae9dc879d9fc8543a);
+            
+    
+            var marker_6577f60152ac5193437bb0c29792156b = L.marker(
+                [36.70357815289541, -4.472183621554442],
+                {
+}
+            ).addTo(marker_cluster_e7355b11a536785c21847ca525b3d1c3);
+        
+    
+            var icon_e5b3632196c82fea4de969d8c604870a = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "video-camera",
+  "prefix": "fa",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_614f9b798eb46f61c81397616dca2632 = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_95d02eed79737ae7b48b9c7fdc6054e9 = $(`<div id="html_95d02eed79737ae7b48b9c7fdc6054e9" style="width: 100.0%; height: 100.0%;">         <div style="width: 280px; font-family: Arial, sans-serif;">             <h4 style="margin: 0 0 10px 0; color: #A29BFE; border-bottom: 2px solid #A29BFE; padding-bottom: 5px;">                 📹 TV107-E-Carretera-Cadiz             </h4>             <p style="margin: 8px 0;"><strong>📍 Ubicación:</strong><br>Carretera de Cádiz - Zona Oeste</p>             <p style="margin: 8px 0;"><strong>🏛️ Distrito:</strong> Distrito 7</p>             <p style="margin: 8px 0;"><strong>♿ Acceso:</strong> PMR</p>                          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ecf0f1;">                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/camaras/5" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         🔗 Ver en web oficial →                     </a>                 </p>                 <p style="margin: 5px 0;">                     <a href="https://movilidad.malaga.eu/img/cam5.jpg" target="_blank"                         style="color: #3498db; text-decoration: none; font-weight: bold;">                         📷 Ver imagen actual →                     </a>                 </p>             </div>                          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #ecf0f1;                          font-size: 10px; color: #95a5a6;">                 <strong>Datos técnicos:</strong><br>                 ID: 5 | UTM: 368500, 4063000<br>                 WGS84: 36.703578°N, -4.472184°W             </div>         </div>         </div>`)[0];
+                popup_614f9b798eb46f61c81397616dca2632.setContent(html_95d02eed79737ae7b48b9c7fdc6054e9);
+            
+        
+
+        marker_6577f60152ac5193437bb0c29792156b.bindPopup(popup_614f9b798eb46f61c81397616dca2632)
+        ;
+
+        
+    
+    
+            marker_6577f60152ac5193437bb0c29792156b.bindTooltip(
+                `<div>
+                     <strong>TV107-E-Carretera-Cadiz</strong><br>Carretera de Cádiz - Zona Oeste
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_6577f60152ac5193437bb0c29792156b.setIcon(icon_e5b3632196c82fea4de969d8c604870a);
+            
+    
+            marker_cluster_e7355b11a536785c21847ca525b3d1c3.addTo(map_6f0f2bf728529eda385bb511f7a4feb1);
+        
+    
+            var layer_control_6efa6cca3969b1aec2c880f3f8f7f114_layers = {
+                base_layers : {
+                    "openstreetmap" : tile_layer_28440b7ca6a895a19299ddcb995cdecd,
+                },
+                overlays :  {
+                    "C\u00e1maras de Tr\u00e1fico" : marker_cluster_e7355b11a536785c21847ca525b3d1c3,
+                },
+            };
+            let layer_control_6efa6cca3969b1aec2c880f3f8f7f114 = L.control.layers(
+                layer_control_6efa6cca3969b1aec2c880f3f8f7f114_layers.base_layers,
+                layer_control_6efa6cca3969b1aec2c880f3f8f7f114_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": true,
+  "autoZIndex": true,
+}
+            ).addTo(map_6f0f2bf728529eda385bb511f7a4feb1);
+
+        
+</script>
+</html>

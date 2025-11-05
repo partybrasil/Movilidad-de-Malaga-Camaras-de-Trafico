@@ -48,3 +48,6 @@ Thumbs.db
 temp/
 cache/
 *.tmp
+
+# Archivos incorrectos de pip
+=*
