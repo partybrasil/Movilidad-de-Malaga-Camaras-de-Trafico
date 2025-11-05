@@ -95,11 +95,11 @@ LOG_TO_CONSOLE = True  # Mostrar logs en consola además de archivo
 CSV_COLUMNS = {
     "nombre": "NOMBRE",
     "direccion": "DIRECCION",
-    "geometry": "ukb_geometry",
+    "geometry": "SDOGEOMETRIA",  # Corregido: era "ukb_geometry"
     "url_imagen": "URLIMAGEN",
     "url": "URL",
-    "acceso": "ACCESO",
-    "distrito": "id_distrito"  # Puede no existir
+    "acceso": "ACCESOPMR",  # Corregido: era "ACCESO"
+    "distrito": None  # No existe en el CSV actual
 }
 
 # Timelapse
