@@ -18,9 +18,10 @@ from typing import Optional
 
 from src.controllers.camera_controller import CameraController
 from src.views.camera_widget import CameraWidget, CameraListItem, CameraDetailDialog
-from src.views.styles import get_theme
+from src.views.styles import get_theme, get_available_themes, get_text_color, get_textbox_background
 from src.models.camera import Camera
 from src.views.timelapse_library import TimelapseLibraryDialog
+from src.views.theme_preview_dialog import ThemePreviewDialog
 from src.timelapse.models import TimelapseSession
 import config
 
@@ -47,6 +48,8 @@ class MainWindow(QMainWindow):
         }
         self.current_view_mode = config.DEFAULT_VIEW_MODE
         self.current_theme = config.DEFAULT_THEME
+        self.current_text_color = config.DEFAULT_TEXT_COLOR
+        self.current_textbox_background = config.DEFAULT_TEXTBOX_BACKGROUND
         self.thumbnail_zoom_level = config.DEFAULT_THUMBNAIL_ZOOM  # Nivel de zoom actual (1-5)
         self.timelapse_dialog: TimelapseLibraryDialog | None = None
         
@@ -151,9 +154,78 @@ class MainWindow(QMainWindow):
 
         layout.addSpacing(10)
         
-        self.btn_tema = QPushButton("🌓 Cambiar Tema")
-        self.btn_tema.clicked.connect(self._toggle_theme)
-        layout.addWidget(self.btn_tema)
+        # Sección de Personalización
+        personalization_label = QLabel("🎨 Personalización")
+        personalization_label.setStyleSheet("font-weight: bold; color: #ecf0f1; font-size: 12pt; margin: 10px 0 5px 0;")
+        layout.addWidget(personalization_label)
+        
+        # Botón de vista previa de temas
+        self.btn_theme_preview = QPushButton("🔍 Vista Previa de Temas")
+        self.btn_theme_preview.clicked.connect(self._show_theme_preview)
+        layout.addWidget(self.btn_theme_preview)
+        
+        layout.addSpacing(5)
+        
+        # Selector de tema principal
+        theme_label = QLabel("Tema:")
+        theme_label.setStyleSheet("color: #ecf0f1; font-size: 9pt; margin-left: 5px;")
+        layout.addWidget(theme_label)
+        
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems([
+            "Claro", "Oscuro", "Azul Profundo", "Verde Bosque", "Púrpura Real",
+            "Rojo Cereza", "Naranja Atardecer", "Rosa Sakura", "Gris Corporativo",
+            "Azul Hielo", "Verde Menta", "Ámbar Dorado", "Violeta Nocturno",
+            "Turquesa Tropical", "Salmón Suave", "Lavanda Relajante", "Oliva Natural",
+            "Chocolate Rico", "Slate Moderno", "Teal Océano", "Coral Vibrante"
+        ])
+        # Establecer el tema actual como seleccionado
+        current_theme_index = max(0, config.AVAILABLE_THEMES.index(self.current_theme) if self.current_theme in config.AVAILABLE_THEMES else 0)
+        self.theme_combo.setCurrentIndex(current_theme_index)
+        self.theme_combo.currentTextChanged.connect(self._on_theme_changed)
+        layout.addWidget(self.theme_combo)
+        
+        layout.addSpacing(5)
+        
+        # Selector de color de texto
+        text_color_label = QLabel("Color de texto:")
+        text_color_label.setStyleSheet("color: #ecf0f1; font-size: 9pt; margin-left: 5px;")
+        layout.addWidget(text_color_label)
+        
+        self.text_color_combo = QComboBox()
+        self.text_color_combo.addItems([
+            "Por defecto", "Negro", "Blanco", "Gris Oscuro", "Gris Claro", "Azul Oscuro",
+            "Azul Claro", "Verde Oscuro", "Verde Claro", "Rojo Oscuro", "Rojo Claro",
+            "Púrpura Oscuro", "Púrpura Claro", "Naranja Oscuro", "Naranja Claro",
+            "Amarillo Oscuro", "Amarillo Claro", "Rosa Oscuro", "Rosa Claro",
+            "Turquesa Oscuro", "Turquesa Claro", "Marrón Oscuro", "Marrón Claro"
+        ])
+        # Establecer el color actual como seleccionado
+        current_text_index = max(0, config.TEXT_COLORS.index(self.current_text_color) if self.current_text_color in config.TEXT_COLORS else 0)
+        self.text_color_combo.setCurrentIndex(current_text_index)
+        self.text_color_combo.currentTextChanged.connect(self._on_text_color_changed)
+        layout.addWidget(self.text_color_combo)
+        
+        layout.addSpacing(5)
+        
+        # Selector de fondo de caja de texto
+        textbox_bg_label = QLabel("Fondo de cajas de texto:")
+        textbox_bg_label.setStyleSheet("color: #ecf0f1; font-size: 9pt; margin-left: 5px;")
+        layout.addWidget(textbox_bg_label)
+        
+        self.textbox_bg_combo = QComboBox()
+        self.textbox_bg_combo.addItems([
+            "Por defecto", "Blanco", "Gris Muy Claro", "Gris Claro", "Gris Medio", 
+            "Gris Oscuro", "Negro", "Azul Muy Claro", "Azul Claro", "Verde Muy Claro",
+            "Verde Claro", "Amarillo Muy Claro", "Amarillo Claro", "Rosa Muy Claro",
+            "Rosa Claro", "Púrpura Muy Claro", "Púrpura Claro", "Naranja Muy Claro",
+            "Naranja Claro", "Turquesa Muy Claro", "Turquesa Claro", "Crema", "Beige"
+        ])
+        # Establecer el fondo actual como seleccionado
+        current_textbox_index = max(0, config.TEXTBOX_BACKGROUNDS.index(self.current_textbox_background) if self.current_textbox_background in config.TEXTBOX_BACKGROUNDS else 0)
+        self.textbox_bg_combo.setCurrentIndex(current_textbox_index)
+        self.textbox_bg_combo.currentTextChanged.connect(self._on_textbox_bg_changed)
+        layout.addWidget(self.textbox_bg_combo)
         
         layout.addSpacing(10)
         
@@ -964,24 +1036,182 @@ class MainWindow(QMainWindow):
                 margin-right: 10px;
             """)
     
+    def _on_theme_changed(self, theme_display_name: str):
+        """
+        Maneja el cambio de tema principal.
+        """
+        # Mapear nombre mostrado a nombre interno
+        theme_map = {
+            "Claro": "claro",
+            "Oscuro": "oscuro",
+            "Azul Profundo": "azul_profundo",
+            "Verde Bosque": "verde_bosque",
+            "Púrpura Real": "purpura_real",
+            "Rojo Cereza": "rojo_cereza",
+            "Naranja Atardecer": "naranja_atardecer",
+            "Rosa Sakura": "rosa_sakura",
+            "Gris Corporativo": "gris_corporativo",
+            "Azul Hielo": "azul_hielo",
+            "Verde Menta": "verde_menta",
+            "Ámbar Dorado": "ambar_dorado",
+            "Violeta Nocturno": "violeta_nocturno",
+            "Turquesa Tropical": "turquesa_tropical",
+            "Salmón Suave": "salmon_suave",
+            "Lavanda Relajante": "lavanda_relajante",
+            "Oliva Natural": "oliva_natural",
+            "Chocolate Rico": "chocolate_rico",
+            "Slate Moderno": "slate_moderno",
+            "Teal Océano": "teal_oceano",
+            "Coral Vibrante": "coral_vibrante"
+        }
+        
+        self.current_theme = theme_map.get(theme_display_name, "claro")
+        self._apply_theme()
+        logger.info(f"Tema cambiado a: {self.current_theme}")
+    
+    def _on_text_color_changed(self, color_display_name: str):
+        """
+        Maneja el cambio de color de texto.
+        """
+        # Mapear nombre mostrado a nombre interno
+        color_map = {
+            "Por defecto": "default",
+            "Negro": "negro",
+            "Blanco": "blanco",
+            "Gris Oscuro": "gris_oscuro",
+            "Gris Claro": "gris_claro",
+            "Azul Oscuro": "azul_oscuro",
+            "Azul Claro": "azul_claro",
+            "Verde Oscuro": "verde_oscuro",
+            "Verde Claro": "verde_claro",
+            "Rojo Oscuro": "rojo_oscuro",
+            "Rojo Claro": "rojo_claro",
+            "Púrpura Oscuro": "purpura_oscuro",
+            "Púrpura Claro": "purpura_claro",
+            "Naranja Oscuro": "naranja_oscuro",
+            "Naranja Claro": "naranja_claro",
+            "Amarillo Oscuro": "amarillo_oscuro",
+            "Amarillo Claro": "amarillo_claro",
+            "Rosa Oscuro": "rosa_oscuro",
+            "Rosa Claro": "rosa_claro",
+            "Turquesa Oscuro": "turquesa_oscuro",
+            "Turquesa Claro": "turquesa_claro",
+            "Marrón Oscuro": "marron_oscuro",
+            "Marrón Claro": "marron_claro"
+        }
+        
+        self.current_text_color = color_map.get(color_display_name, "default")
+        self._apply_theme()
+        logger.info(f"Color de texto cambiado a: {self.current_text_color}")
+    
+    def _on_textbox_bg_changed(self, bg_display_name: str):
+        """
+        Maneja el cambio de fondo de cajas de texto.
+        """
+        # Mapear nombre mostrado a nombre interno
+        bg_map = {
+            "Por defecto": "default",
+            "Blanco": "blanco",
+            "Gris Muy Claro": "gris_muy_claro",
+            "Gris Claro": "gris_claro",
+            "Gris Medio": "gris_medio",
+            "Gris Oscuro": "gris_oscuro",
+            "Negro": "negro",
+            "Azul Muy Claro": "azul_muy_claro",
+            "Azul Claro": "azul_claro",
+            "Verde Muy Claro": "verde_muy_claro",
+            "Verde Claro": "verde_claro",
+            "Amarillo Muy Claro": "amarillo_muy_claro",
+            "Amarillo Claro": "amarillo_claro",
+            "Rosa Muy Claro": "rosa_muy_claro",
+            "Rosa Claro": "rosa_claro",
+            "Púrpura Muy Claro": "purpura_muy_claro",
+            "Púrpura Claro": "purpura_claro",
+            "Naranja Muy Claro": "naranja_muy_claro",
+            "Naranja Claro": "naranja_claro",
+            "Turquesa Muy Claro": "turquesa_muy_claro",
+            "Turquesa Claro": "turquesa_claro",
+            "Crema": "crema",
+            "Beige": "beige"
+        }
+        
+        self.current_textbox_background = bg_map.get(bg_display_name, "default")
+        self._apply_theme()
+        logger.info(f"Fondo de cajas de texto cambiado a: {self.current_textbox_background}")
+    
+    def _show_theme_preview(self):
+        """
+        Muestra el diálogo de vista previa de temas.
+        """
+        dialog = ThemePreviewDialog(self.current_theme, self)
+        dialog.theme_applied.connect(self._apply_theme_from_preview)
+        dialog.exec()
+    
+    def _apply_theme_from_preview(self, theme_name: str):
+        """
+        Aplica un tema seleccionado desde la vista previa.
+        """
+        self.current_theme = theme_name
+        
+        # Actualizar el combo box del tema
+        theme_map = {
+            "claro": "Claro",
+            "oscuro": "Oscuro",
+            "azul_profundo": "Azul Profundo",
+            "verde_bosque": "Verde Bosque",
+            "purpura_real": "Púrpura Real",
+            "rojo_cereza": "Rojo Cereza",
+            "naranja_atardecer": "Naranja Atardecer",
+            "rosa_sakura": "Rosa Sakura",
+            "gris_corporativo": "Gris Corporativo",
+            "azul_hielo": "Azul Hielo",
+            "verde_menta": "Verde Menta",
+            "ambar_dorado": "Ámbar Dorado",
+            "violeta_nocturno": "Violeta Nocturno",
+            "turquesa_tropical": "Turquesa Tropical",
+            "salmon_suave": "Salmón Suave",
+            "lavanda_relajante": "Lavanda Relajante",
+            "oliva_natural": "Oliva Natural",
+            "chocolate_rico": "Chocolate Rico",
+            "slate_moderno": "Slate Moderno",
+            "teal_oceano": "Teal Océano",
+            "coral_vibrante": "Coral Vibrante"
+        }
+        
+        display_name = theme_map.get(theme_name, "Claro")
+        try:
+            index = [self.theme_combo.itemText(i) for i in range(self.theme_combo.count())].index(display_name)
+            self.theme_combo.setCurrentIndex(index)
+        except ValueError:
+            logger.warning(f"No se pudo encontrar el tema {display_name} en el combo box")
+        
+        self._apply_theme()
+        logger.info(f"Tema aplicado desde vista previa: {theme_name}")
+    
     def _toggle_theme(self):
         """
-        Alterna entre tema claro y oscuro.
+        Alterna entre tema claro y oscuro (método mantenido por compatibilidad).
         """
         if self.current_theme == "claro":
             self.current_theme = "oscuro"
+            self.theme_combo.setCurrentIndex(1)
         else:
             self.current_theme = "claro"
+            self.theme_combo.setCurrentIndex(0)
         
         self._apply_theme()
     
     def _apply_theme(self):
         """
-        Aplica el tema actual.
+        Aplica el tema actual con personalizaciones.
         """
-        stylesheet = get_theme(self.current_theme)
+        stylesheet = get_theme(
+            theme_name=self.current_theme,
+            text_color=self.current_text_color,
+            textbox_bg=self.current_textbox_background
+        )
         self.setStyleSheet(stylesheet)
-        logger.info(f"Tema aplicado: {self.current_theme}")
+        logger.info(f"Tema aplicado: {self.current_theme} con texto: {self.current_text_color} y fondo: {self.current_textbox_background}")
     
     def _show_camera_details(self, camera_id: int):
         """

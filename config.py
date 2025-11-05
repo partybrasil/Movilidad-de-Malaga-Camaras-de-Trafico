@@ -45,7 +45,7 @@ THUMBNAIL_SIZES = {
 DEFAULT_THUMBNAIL_ZOOM = 3  # Nivel de zoom por defecto (1-5)
 
 # Sistema de favoritos
-MAX_FAVORITES = 20  # Límite de cámaras favoritas (configurable)
+MAX_FAVORITES = 25  # Límite de cámaras favoritas (configurable)
 APP_DATA_DIR_NAME = "movilidad_malaga"
 FAVORITES_FILE_NAME = "favorites.json"
 
@@ -54,7 +54,36 @@ ENABLE_IMAGE_CACHE = True
 CACHE_MAX_SIZE = 100  # Número máximo de imágenes en caché
 
 # Tema
-DEFAULT_THEME = "claro"  # "claro" u "oscuro"
+DEFAULT_THEME = "azul_profundo"  # Tema principal por defecto
+DEFAULT_TEXT_COLOR = "amarillo_oscuro"  # Color de texto por defecto
+DEFAULT_TEXTBOX_BACKGROUND = "negro"  # Fondo de caja de texto por defecto
+
+# Temas disponibles
+AVAILABLE_THEMES = [
+    "claro", "oscuro", "azul_profundo", "verde_bosque", "purpura_real", 
+    "rojo_cereza", "naranja_atardecer", "rosa_sakura", "gris_corporativo",
+    "azul_hielo", "verde_menta", "ambar_dorado", "violeta_nocturno",
+    "turquesa_tropical", "salmon_suave", "lavanda_relajante", "oliva_natural",
+    "chocolate_rico", "slate_moderno", "teal_oceano", "coral_vibrante"
+]
+
+# Colores de texto disponibles
+TEXT_COLORS = [
+    "default", "negro", "blanco", "gris_oscuro", "gris_claro", "azul_oscuro",
+    "azul_claro", "verde_oscuro", "verde_claro", "rojo_oscuro", "rojo_claro",
+    "purpura_oscuro", "purpura_claro", "naranja_oscuro", "naranja_claro",
+    "amarillo_oscuro", "amarillo_claro", "rosa_oscuro", "rosa_claro",
+    "turquesa_oscuro", "turquesa_claro", "marron_oscuro", "marron_claro"
+]
+
+# Colores de fondo para cajas de texto
+TEXTBOX_BACKGROUNDS = [
+    "default", "blanco", "gris_muy_claro", "gris_claro", "gris_medio", 
+    "gris_oscuro", "negro", "azul_muy_claro", "azul_claro", "verde_muy_claro",
+    "verde_claro", "amarillo_muy_claro", "amarillo_claro", "rosa_muy_claro",
+    "rosa_claro", "purpura_muy_claro", "purpura_claro", "naranja_muy_claro",
+    "naranja_claro", "turquesa_muy_claro", "turquesa_claro", "crema", "beige"
+]
 
 # Logging
 LOG_LEVEL = "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
