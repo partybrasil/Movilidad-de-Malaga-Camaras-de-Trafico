@@ -19,6 +19,7 @@ from typing import Optional
 from src.controllers.camera_controller import CameraController
 from src.views.camera_widget import CameraWidget, CameraListItem, CameraDetailDialog
 from src.views.styles import get_theme, get_available_themes, get_text_color, get_textbox_background
+from src.views.map_view import MapView
 from src.models.camera import Camera
 from src.views.timelapse_library import TimelapseLibraryDialog
 from src.views.theme_preview_dialog import ThemePreviewDialog
@@ -52,6 +53,7 @@ class MainWindow(QMainWindow):
         self.current_textbox_background = config.DEFAULT_TEXTBOX_BACKGROUND
         self.thumbnail_zoom_level = config.DEFAULT_THUMBNAIL_ZOOM  # Nivel de zoom actual (1-5)
         self.timelapse_dialog: TimelapseLibraryDialog | None = None
+        self.map_view: MapView | None = None  # Vista de mapa
         
         self._setup_ui()
         self._connect_signals()
@@ -134,6 +136,10 @@ class MainWindow(QMainWindow):
         self.btn_vista_favoritos = QPushButton("⭐ Vista Favoritos")
         self.btn_vista_favoritos.clicked.connect(lambda: self._change_view("favoritos"))
         layout.addWidget(self.btn_vista_favoritos)
+        
+        self.btn_vista_mapa = QPushButton("🗺️ Modo Mapa")
+        self.btn_vista_mapa.clicked.connect(lambda: self._change_view("mapa"))
+        layout.addWidget(self.btn_vista_mapa)
         
         layout.addSpacing(10)
         
@@ -283,6 +289,10 @@ class MainWindow(QMainWindow):
         # Vista Favoritos
         self.favorites_view = self._create_favorites_view()
         self.stacked_widget.addWidget(self.favorites_view)
+        
+        # Vista Mapa
+        self.map_view = MapView()
+        self.stacked_widget.addWidget(self.map_view)
         
         layout.addWidget(self.stacked_widget, stretch=1)
         
@@ -875,7 +885,7 @@ class MainWindow(QMainWindow):
             logger.info("Actualización completa de todas las cámaras")
     
     def _change_view(self, view_mode: str):
-        """Cambia entre las vistas lista, cuadrícula y favoritos."""
+        """Cambia entre las vistas lista, cuadrícula, favoritos y mapa."""
         self.current_view_mode = view_mode
 
         if view_mode == "lista":
@@ -896,6 +906,13 @@ class MainWindow(QMainWindow):
             count = len(favorites)
             label = "favoritas" if count != 1 else "favorita"
             self.camera_count_label.setText(f"{count} {label}")
+        elif view_mode == "mapa":
+            self.stacked_widget.setCurrentIndex(3)
+            self.zoom_controls.setVisible(False)
+            # Actualizar cámaras en la vista de mapa
+            cameras = self.controller.get_filtered_cameras()
+            self.map_view.set_cameras(cameras)
+            self.camera_count_label.setText(f"{len(cameras)} cámaras en el mapa")
         else:
             logger.warning("Vista desconocida solicitada: %s", view_mode)
             return

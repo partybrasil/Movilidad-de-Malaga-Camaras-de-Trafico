@@ -95,11 +95,11 @@ LOG_TO_CONSOLE = True  # Mostrar logs en consola además de archivo
 CSV_COLUMNS = {
     "nombre": "NOMBRE",
     "direccion": "DIRECCION",
-    "geometry": "ukb_geometry",
+    "geometry": "SDOGEOMETRIA",  # Corregido: era "ukb_geometry"
     "url_imagen": "URLIMAGEN",
     "url": "URL",
-    "acceso": "ACCESO",
-    "distrito": "id_distrito"  # Puede no existir
+    "acceso": "ACCESOPMR",  # Corregido: era "ACCESO"
+    "distrito": None  # No existe en el CSV actual
 }
 
 # Timelapse
@@ -127,3 +127,26 @@ TIMELAPSE_PLAYBACK_SPEEDS = [
     12.0,
     16.0,
 ]
+
+# Mapa interactivo
+MAP_CENTER_LAT = 36.7213  # Centro de Málaga
+MAP_CENTER_LON = -4.4214
+MAP_DEFAULT_ZOOM = 13
+MAP_TILE_LAYER = "OpenStreetMap"  # Opciones: OpenStreetMap, CartoDB positron, CartoDB dark_matter
+MAP_COORDINATE_SYSTEM = "EPSG:25830"  # Sistema de coordenadas del CSV oficial
+MAP_TARGET_SYSTEM = "EPSG:4326"  # WGS84 (lat/lon) para folium
+
+# Distritos de Málaga (colores para el mapa)
+DISTRICT_COLORS = {
+    "1": "#FF6B6B",   # Centro
+    "2": "#4ECDC4",   # Málaga Este
+    "3": "#45B7D1",   # Ciudad Jardín
+    "4": "#96CEB4",   # Bailén-Miraflores
+    "5": "#FFEAA7",   # Palma-Palmilla
+    "6": "#DFE6E9",   # Cruz de Humilladero
+    "7": "#A29BFE",   # Carretera de Cádiz
+    "8": "#FD79A8",   # Churriana
+    "9": "#FDCB6E",   # Campanillas
+    "10": "#74B9FF",  # Puerto de la Torre
+    "11": "#55EFC4",  # Teatinos-Universidad
+}
