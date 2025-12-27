@@ -159,6 +159,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.btn_timelapse)
 
         layout.addSpacing(10)
+
+        self.btn_video_wall = QPushButton("📺 Video Wall")
+        self.btn_video_wall.clicked.connect(self._toggle_video_wall)
+        layout.addWidget(self.btn_video_wall)
+
+        layout.addSpacing(10)
         
         # Sección de Personalización
         personalization_label = QLabel("🎨 Personalización")
@@ -268,12 +274,12 @@ class MainWindow(QMainWindow):
         layout.setSpacing(0)
         
         # Encabezado
-        header = self._create_header()
-        layout.addWidget(header)
+        self.header_widget = self._create_header()
+        layout.addWidget(self.header_widget)
         
         # Área de filtros
-        filters = self._create_filters()
-        layout.addWidget(filters)
+        self.filters_widget = self._create_filters()
+        layout.addWidget(self.filters_widget)
         
         # Área de visualización (stacked para cambiar entre vistas)
         self.stacked_widget = QStackedWidget()
@@ -818,6 +824,54 @@ class MainWindow(QMainWindow):
                 self.camera_widgets_by_view["favoritos"].clear()
                 self.favorites_grid_widget.hide()
                 self.favorites_placeholder.show()
+
+    def _toggle_video_wall(self):
+        """Alterna entre el modo Video Wall y el modo normal."""
+        is_fullscreen = self.isFullScreen()
+
+        if not is_fullscreen:
+            # Entrar a modo Video Wall
+            self.sidebar.hide()
+            if hasattr(self, 'header_widget'):
+                self.header_widget.hide()
+            if hasattr(self, 'filters_widget'):
+                self.filters_widget.hide()
+            self.status_bar.hide()
+            
+            # Forzar vista cuadrícula si no está activa
+            if self.current_view_mode != "cuadricula":
+                self._change_view("cuadricula")
+            
+            # Eliminar márgenes para un look seamless
+            self.grid_layout.setContentsMargins(0, 0, 0, 0)
+            self.grid_layout.setSpacing(0)
+            
+            self.showFullScreen()
+            
+            # Mensaje temporal
+            QMessageBox.information(self, "Modo Video Wall",
+                                   "Estás en modo Video Wall.\nPresiona ESC para salir.",
+                                   QMessageBox.Ok)
+        else:
+            # Salir de modo Video Wall
+            self.showNormal()
+            self.sidebar.show()
+            if hasattr(self, 'header_widget'):
+                self.header_widget.show()
+            if hasattr(self, 'filters_widget'):
+                self.filters_widget.show()
+            self.status_bar.show()
+            
+            # Restaurar márgenes
+            self.grid_layout.setContentsMargins(15, 15, 15, 15)
+            self.grid_layout.setSpacing(15)
+
+    def keyPressEvent(self, event):
+        """Maneja eventos de teclado globales."""
+        if event.key() == Qt.Key_Escape and self.isFullScreen():
+            self._toggle_video_wall()
+        else:
+            super().keyPressEvent(event)
     
     def _on_image_loaded(self, camera_id: int, pixmap):
         """
