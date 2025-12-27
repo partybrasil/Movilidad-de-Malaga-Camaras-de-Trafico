@@ -142,6 +142,7 @@ class MapView(QWidget):
                 <li><strong>Información al hacer click</strong>: Click en un pin para ver detalles de la cámara</li>
                 <li><strong>Filtrado por distrito</strong>: Usa el filtro superior para ver solo cámaras de un distrito</li>
                 <li><strong>Clustering inteligente</strong>: Las cámaras cercanas se agrupan automáticamente</li>
+                <li><strong>Street View</strong>: Haz click derecho en cualquier lugar o usa el enlace en los popups para ver la calle</li>
             </ul>
             
             <h3>Cómo usar:</h3>
@@ -276,6 +277,11 @@ class MapView(QWidget):
                     <p style="margin: 5px 0;">
                         <a href="{camera.url_imagen}" target="_blank" style="color: #3498db;">📷 Ver imagen actual</a>
                     </p>
+                    <p style="margin: 5px 0;">
+                        <a href="{config.STREET_VIEW_URL_TEMPLATE.format(lat=lat, lon=lon)}" target="_blank" style="color: #e67e22; font-weight: bold;">
+                            🚶 Ver en Street View
+                        </a>
+                    </p>
                     <p style="margin-top: 10px; font-size: 10px; color: #7f8c8d;">
                         ID: {camera.id} | Coords: {x:.0f}, {y:.0f}
                     </p>
@@ -301,6 +307,43 @@ class MapView(QWidget):
             if self.show_districts_checkbox.isChecked():
                 legend_html = self._create_legend_html()
                 m.get_root().html.add_child(folium.Element(legend_html))
+            
+            # --- Integración de Street View (Click Derecho) ---
+            map_var_name = m.get_name()
+            js_script = f"""
+            <script>
+                function openStreetView(lat, lon) {{
+                    var url = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=" + lat + "," + lon;
+                    window.open(url, '_blank');
+                }}
+                
+                // Esperar a que el mapa esté listo
+                window.addEventListener('load', function() {{
+                    // Intentar acceder a la variable del mapa
+                    var mapInstance = {map_var_name};
+                    
+                    if (mapInstance) {{
+                        mapInstance.on('contextmenu', function(e) {{
+                            var lat = e.latlng.lat;
+                            var lon = e.latlng.lng;
+                            
+                            var content = '<div style="font-family: Arial; padding: 8px; cursor: pointer; text-align: center;">' +
+                                          '<div style="color: #e67e22; font-weight: bold; margin-bottom: 4px;">🚶 Street View</div>' +
+                                          '<button onclick="openStreetView(' + lat + ',' + lon + ')" ' +
+                                          'style="background: #34495e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">' +
+                                          'Ver aquí</button></div>';
+                                          
+                            L.popup()
+                                .setLatLng(e.latlng)
+                                .setContent(content)
+                                .openOn(mapInstance);
+                        }});
+                        console.log("Street View integration initialized");
+                    }}
+                }});
+            </script>
+            """
+            m.get_root().html.add_child(folium.Element(js_script))
             
             # Guardar mapa en archivo temporal
             temp_dir = Path(tempfile.gettempdir())

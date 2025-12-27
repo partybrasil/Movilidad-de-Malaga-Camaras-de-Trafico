@@ -135,6 +135,7 @@ MAP_DEFAULT_ZOOM = 13
 MAP_TILE_LAYER = "OpenStreetMap"  # Opciones: OpenStreetMap, CartoDB positron, CartoDB dark_matter
 MAP_COORDINATE_SYSTEM = "EPSG:25830"  # Sistema de coordenadas del CSV oficial
 MAP_TARGET_SYSTEM = "EPSG:4326"  # WGS84 (lat/lon) para folium
+STREET_VIEW_URL_TEMPLATE = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={lat},{lon}"
 
 # Distritos de Málaga (colores para el mapa)
 DISTRICT_COLORS = {
