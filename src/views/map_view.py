@@ -14,11 +14,13 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
     QLabel, QComboBox, QCheckBox, QTextBrowser
 )
-from PySide6.QtCore import Qt, Signal, QUrl
+from PySide6.QtCore import Qt, Signal, QUrl, QThread
 from PySide6.QtGui import QDesktopServices
 
+from src.workers import MapGenerationWorker
+
 import folium
-from folium import plugins
+import folium
 
 from src.models.camera import Camera
 from src.utils.coordinate_converter import get_converter
@@ -49,6 +51,10 @@ class MapView(QWidget):
         
         # Distritos seleccionados (para filtrar)
         self.selected_districts: set = set()
+        
+        # Threads
+        self.worker_thread = None
+        self.worker = None
         
         self._setup_ui()
         logger.info("MapView inicializada")
@@ -209,7 +215,7 @@ class MapView(QWidget):
     
     def _generate_map(self):
         """
-        Genera el mapa interactivo con folium.
+        Genera el mapa interactivo en segundo plano.
         """
         if not self.filtered_cameras:
             logger.warning("No hay cámaras para mostrar en el mapa")
@@ -220,226 +226,61 @@ class MapView(QWidget):
                 </div>
             """)
             return
+            
+        self.btn_refresh_map.setEnabled(False)
+        self.info_frame.setHtml("""
+            <div style="padding: 20px; text-align: center;">
+                <h3>🔄 Generando mapa...</h3>
+                <p>Por favor espere, esto puede tardar unos segundos.</p>
+                <p>Procesando {} cámaras.</p>
+            </div>
+        """.format(len(self.filtered_cameras)))
         
-        try:
-            # Crear mapa centrado en Málaga
-            m = folium.Map(
-                location=[config.MAP_CENTER_LAT, config.MAP_CENTER_LON],
-                zoom_start=config.MAP_DEFAULT_ZOOM,
-                tiles=config.MAP_TILE_LAYER
-            )
-            
-            # Añadir capa de clustering para mejor performance
-            marker_cluster = plugins.MarkerCluster(
-                name="Cámaras de Tráfico",
-                overlay=True,
-                control=True,
-                icon_create_function=None
-            ).add_to(m)
-            
-            # Contador de cámaras procesadas
-            cameras_with_coords = 0
-            cameras_without_coords = 0
-            
-            # Añadir marcadores para cada cámara
-            for camera in self.filtered_cameras:
-                if not camera.coordenadas:
-                    cameras_without_coords += 1
-                    continue
-                
-                x, y = camera.coordenadas
-                
-                # Convertir coordenadas UTM a lat/lon
-                coords = self.converter.convert(x, y)
-                if not coords:
-                    cameras_without_coords += 1
-                    continue
-                
-                lon, lat = coords
-                cameras_with_coords += 1
-                
-                # Determinar color según distrito
-                color = config.DISTRICT_COLORS.get(
-                    camera.distrito if camera.distrito else "0",
-                    "#95a5a6"  # Gris por defecto
-                )
-                
-                # Crear popup con información de la cámara
-                popup_html = f"""
-                <div style="width: 300px; font-family: Arial, sans-serif;">
-                    <h4 style="margin: 0 0 10px 0; color: {color};">📹 {camera.nombre}</h4>
-                    
-                    <!-- Mini Player & Controls -->
-                    <div class="camera-player" style="margin-bottom: 10px;">
-                        <img src="{camera.url_imagen}" 
-                             class="camera-live-feed" 
-                             data-url="{camera.url_imagen}"
-                             style="width: 100%; border-radius: 4px; border: 1px solid #ddd; min-height: 150px; background: #f0f0f0;">
-                        
-                        <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; background: #f1f2f6; padding: 6px 10px; border-radius: 4px;">
-                            <span style="font-size: 12px; font-weight: bold; color: #2c3e50;">⏱️ Actualizar:</span>
-                            <select class="camera-interval-select" style="font-size: 12px; padding: 2px 5px; border: 1px solid #bdc3c7; border-radius: 3px;">
-                                <option value="1">1 s</option>
-                                <option value="3">3 s</option>
-                                <option value="5" selected>5 s</option>
-                                <option value="10">10 s</option>
-                                <option value="15">15 s</option>
-                                <option value="20">20 s</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <p style="margin: 5px 0;"><strong>Ubicación:</strong><br>{camera.direccion}</p>
-                    <p style="margin: 5px 0;"><strong>Distrito:</strong> {camera.get_distrito_display()}</p>
-                    {'<p style="margin: 5px 0;"><strong>Acceso:</strong> ' + camera.acceso + '</p>' if camera.acceso else ''}
-                    <p style="margin: 10px 0 5px 0;">
-                        <a href="{camera.url}" target="_blank" style="color: #3498db;">🔗 Ver en web oficial</a>
-                    </p>
-                    <p style="margin: 5px 0;">
-                        <a href="{config.STREET_VIEW_URL_TEMPLATE.format(lat=lat, lon=lon)}" target="_blank" style="color: #e67e22; font-weight: bold;">
-                            🚶 Ver en Street View
-                        </a>
-                    </p>
-                    <p style="margin-top: 10px; font-size: 10px; color: #7f8c8d;">
-                        ID: {camera.id} | Coords: {x:.0f}, {y:.0f}
-                    </p>
-                </div>
-                """
-                
-                # Crear marcador
-                folium.Marker(
-                    location=[lat, lon],
-                    popup=folium.Popup(popup_html, max_width=320),
-                    tooltip=f"{camera.nombre}",
-                    icon=folium.Icon(
-                        color='blue' if not camera.distrito else 'red',
-                        icon='video-camera',
-                        prefix='fa'
-                    )
-                ).add_to(marker_cluster)
-            
-            # Añadir capas adicionales
-            folium.LayerControl().add_to(m)
-            
-            # Añadir leyenda de distritos si está habilitado
-            if self.show_districts_checkbox.isChecked():
-                legend_html = self._create_legend_html()
-                m.get_root().html.add_child(folium.Element(legend_html))
-            
-            # --- Integración de Scripts (Street View + Auto Refresh) ---
-            map_var_name = m.get_name()
-            js_script = f"""
-            <script>
-                function openStreetView(lat, lon) {{
-                    var url = "https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=" + lat + "," + lon;
-                    window.open(url, '_blank');
-                }}
-                
-                // Esperar a que el mapa esté listo
-                window.addEventListener('load', function() {{
-                    // Obtener instancia del mapa
-                    var mapInstance = {map_var_name};
-                    
-                    if (mapInstance) {{
-                        // --- Click Derecho Street View ---
-                        mapInstance.on('contextmenu', function(e) {{
-                            var lat = e.latlng.lat;
-                            var lon = e.latlng.lng;
-                            
-                            var content = '<div style="font-family: Arial; padding: 8px; cursor: pointer; text-align: center;">' +
-                                          '<div style="color: #e67e22; font-weight: bold; margin-bottom: 4px;">🚶 Street View</div>' +
-                                          '<button onclick="openStreetView(' + lat + ',' + lon + ')" ' +
-                                          'style="background: #34495e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">' +
-                                          'Ver aquí</button></div>';
-                                          
-                            L.popup()
-                                .setLatLng(e.latlng)
-                                .setContent(content)
-                                .openOn(mapInstance);
-                        }});
-                        
-                        // --- Auto Refresh de Cámaras ---
-                        mapInstance.on('popupopen', function(e) {{
-                            var popupNode = e.popup._contentNode;
-                            var img = popupNode.querySelector('.camera-live-feed');
-                            var select = popupNode.querySelector('.camera-interval-select');
-                            
-                            if (img && select) {{
-                                var url = img.getAttribute('data-url');
-                                var timerId = null;
-                                
-                                function refreshImage() {{
-                                    // Añadir timestamp para evitar caché
-                                    var uniqueUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + new Date().getTime();
-                                    img.src = uniqueUrl;
-                                }}
-                                
-                                function updateTimer() {{
-                                    if (timerId) clearInterval(timerId);
-                                    var intervalSec = parseInt(select.value);
-                                    if (intervalSec > 0) {{
-                                        timerId = setInterval(refreshImage, intervalSec * 1000);
-                                    }}
-                                    e.popup._cameraTimer = timerId;
-                                }}
-                                
-                                // Escuchar cambios
-                                select.addEventListener('change', updateTimer);
-                                
-                                // Iniciar inmediatamente
-                                updateTimer();
-                            }}
-                        }});
-                        
-                        mapInstance.on('popupclose', function(e) {{
-                            // Limpiar timer si existe
-                            if (e.popup._cameraTimer) {{
-                                clearInterval(e.popup._cameraTimer);
-                                e.popup._cameraTimer = null;
-                            }}
-                        }});
-                        
-                        console.log("Map enhancements initialized (Street View + Camera Player)");
-                    }}
-                }});
-            </script>
-            """
-            m.get_root().html.add_child(folium.Element(js_script))
-            
-            # Guardar mapa en archivo temporal
-            temp_dir = Path(tempfile.gettempdir())
-            self.map_html_path = temp_dir / "malaga_camaras_mapa.html"
-            m.save(str(self.map_html_path))
-            
-            # Habilitar botón de abrir en navegador
-            self.btn_open_browser.setEnabled(True)
-            
-            # Actualizar info frame
-            self.info_frame.setHtml(f"""
-                <div style="padding: 20px; font-family: Arial, sans-serif;">
-                    <h3 style="color: #27ae60;">✓ Mapa generado exitosamente</h3>
-                    <p><strong>Cámaras procesadas:</strong> {cameras_with_coords}</p>
-                    <p><strong>Cámaras sin coordenadas:</strong> {cameras_without_coords}</p>
-                    <p style="margin-top: 15px;">
-                        El mapa ha sido generado correctamente. 
-                        Haz click en <strong>"Abrir en Navegador"</strong> para verlo.
-                    </p>
-                    <p style="color: #7f8c8d; font-size: 11px; margin-top: 20px;">
-                        Archivo: {self.map_html_path}
-                    </p>
-                </div>
-            """)
-            
-            logger.info(f"Mapa generado: {cameras_with_coords} cámaras, guardado en {self.map_html_path}")
-            
-        except Exception as e:
-            logger.error(f"Error generando mapa: {e}", exc_info=True)
-            self.info_frame.setHtml(f"""
-                <div style="padding: 20px; color: #e74c3c;">
-                    <h3>❌ Error generando mapa</h3>
-                    <p>{str(e)}</p>
-                </div>
-            """)
+        # Crear thread y worker
+        self.worker_thread = QThread()
+        self.worker = MapGenerationWorker(
+            self.filtered_cameras, 
+            self.show_districts_checkbox.isChecked()
+        )
+        self.worker.moveToThread(self.worker_thread)
+        
+        # Conectar señales
+        self.worker_thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self._on_map_generated)
+        self.worker.error.connect(self._on_map_error)
+        
+        # Limpieza
+        self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.worker.error.connect(self.worker_thread.quit)
+        self.worker.error.connect(self.worker.deleteLater)
+        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
+        self.worker_thread.finished.connect(self._on_thread_finished)
+        
+        # Iniciar
+        self.worker_thread.start()
+        
+    def _on_map_generated(self, map_path: Path, summary_html: str):
+        """Callback éxito generación mapa."""
+        self.map_html_path = map_path
+        self.info_frame.setHtml(summary_html)
+        self.btn_open_browser.setEnabled(True)
+        self.btn_refresh_map.setEnabled(True)
+        
+    def _on_map_error(self, error_msg: str):
+        """Callback error generación mapa."""
+        self.info_frame.setHtml(f"""
+            <div style="padding: 20px; color: #e74c3c;">
+                <h3>❌ Error generando mapa</h3>
+                <p>{error_msg}</p>
+            </div>
+        """)
+        self.btn_refresh_map.setEnabled(True)
+        
+    def _on_thread_finished(self):
+        """Limpieza."""
+        self.worker_thread = None
+        self.worker = None
     
     def _create_legend_html(self) -> str:
         """

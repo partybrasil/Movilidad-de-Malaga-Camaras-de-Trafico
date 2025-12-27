@@ -8,7 +8,7 @@ el modelo de datos y las vistas.
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
-from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtCore import QObject, Signal, QTimer, QThread
 import logging
 
 from src.models.camera import Camera
@@ -16,6 +16,7 @@ from src.utils.data_loader import DataLoader
 from src.utils.image_loader import ImageLoader
 from src.utils.preferences import FavoritesManager
 from src.timelapse import TimelapseManager, TimelapseSession
+from src.workers import DataLoadWorker
 import config
 
 
@@ -71,33 +72,58 @@ class CameraController(QObject):
         self.timelapse_manager.session_error.connect(self.timelapse_error.emit)
         self.timelapse_manager.export_completed.connect(self.timelapse_export_completed.emit)
         
+        # Threads
+        self.worker_thread = None
+        self.worker = None
+        
         logger.info("CameraController inicializado")
     
     def load_initial_data(self):
         """
-        Carga los datos iniciales desde el CSV.
+        Carga los datos iniciales desde el CSV en segundo plano.
         """
-        self.loading_progress.emit("Descargando datos de cámaras...")
+        self.loading_progress.emit("Iniciando descarga de datos...")
         
-        success = self.data_loader.load_data()
+        # Crear thread y worker
+        self.worker_thread = QThread()
+        self.worker = DataLoadWorker()
+        self.worker.moveToThread(self.worker_thread)
         
+        # Conectar señales
+        self.worker_thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self._on_data_load_finished)
+        self.worker.progress.connect(self.loading_progress.emit)
+        
+        # Limpieza
+        self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
+        self.worker_thread.finished.connect(self._on_thread_finished)
+        
+        # Iniciar
+        self.worker_thread.start()
+        
+    def _on_data_load_finished(self, success: bool, cameras: List[Camera]):
+        """
+        Callback cuando termina la carga de datos.
+        """
         if success:
-            self.all_cameras = self.data_loader.get_cameras()
+            self.all_cameras = cameras
             self.filtered_cameras = self.all_cameras.copy()
             self._initialize_favorites()
             
-            self.loading_progress.emit(
-                f"Cargadas {len(self.all_cameras)} cámaras correctamente"
-            )
-            
             logger.info(f"Datos cargados: {len(self.all_cameras)} cámaras")
         else:
-            self.loading_progress.emit("Error al cargar datos")
             logger.error("Fallo en la carga de datos")
-        
+            
         self.data_loaded.emit(success)
         self.cameras_updated.emit(self.filtered_cameras)
         self.favorites_updated.emit(self.get_favorite_ids())
+
+    def _on_thread_finished(self):
+        """Limpieza referencias al terminar el thread."""
+        self.worker_thread = None
+        self.worker = None
     
     def get_all_cameras(self) -> List[Camera]:
         """
