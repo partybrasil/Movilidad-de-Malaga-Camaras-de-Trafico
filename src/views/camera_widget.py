@@ -34,6 +34,8 @@ class CameraWidget(QWidget):
     # Señales
     camera_clicked = Signal(int)  # camera_id
     image_reload_requested = Signal(int)  # camera_id
+    undock_requested = Signal(int)  # camera_id
+
     
     def __init__(self, camera: Camera, thumbnail_size: tuple = None, parent=None):
         """
@@ -116,7 +118,14 @@ class CameraWidget(QWidget):
         self.details_btn.clicked.connect(self._on_details_clicked)
         buttons_layout.addWidget(self.details_btn)
         
+        # Botón desacoplar
+        self.undock_btn = QPushButton("🔓 Desacoplar")
+        self.undock_btn.clicked.connect(self._on_undock_clicked)
+        self.undock_btn.setToolTip("Abrir en ventana independiente")
+        buttons_layout.addWidget(self.undock_btn)
+        
         layout.addLayout(buttons_layout)
+
         
         self.setLayout(layout)
         
@@ -181,6 +190,13 @@ class CameraWidget(QWidget):
         """
         self.camera_clicked.emit(self.camera.id)
     
+    def _on_undock_clicked(self):
+        """
+        Callback cuando se hace clic en desacoplar.
+        """
+        self.undock_requested.emit(self.camera.id)
+
+    
     def resizeEvent(self, event):
         """
         Maneja el redimensionamiento del widget.
@@ -204,6 +220,8 @@ class CameraListItem(QWidget):
     
     # Señales
     camera_clicked = Signal(int)  # camera_id
+    undock_requested = Signal(int)  # camera_id
+
     
     def __init__(self, camera: Camera, parent=None):
         """
@@ -254,6 +272,14 @@ class CameraListItem(QWidget):
         
         layout.addLayout(info_layout, stretch=1)
         
+        # Botón desacoplar compacto
+        self.undock_btn = QPushButton("🔓")
+        self.undock_btn.setFixedSize(34, 34)
+        self.undock_btn.setToolTip("Desacoplar cámara")
+        self.undock_btn.clicked.connect(self._on_undock_clicked)
+        layout.addWidget(self.undock_btn)
+
+        
         self.setLayout(layout)
         
         # Hacer clickeable
@@ -280,6 +306,13 @@ class CameraListItem(QWidget):
         """
         if event.button() == Qt.LeftButton:
             self.camera_clicked.emit(self.camera.id)
+    
+    def _on_undock_clicked(self):
+        """
+        Callback para desacoplar desde la lista.
+        """
+        self.undock_requested.emit(self.camera.id)
+
 
 
 class CameraDetailDialog(QDialog):
@@ -289,6 +322,8 @@ class CameraDetailDialog(QDialog):
     
     # Señales
     image_reload_requested = Signal()
+    undock_requested = Signal(int)
+
     
     def __init__(self, camera: Camera, image_loader, controller: "CameraController", parent=None):
         """
@@ -415,8 +450,11 @@ class CameraDetailDialog(QDialog):
         controls_layout.addWidget(interval_label)
         
         self.interval_combo = QComboBox()
+        self.interval_combo.addItem("1 segundo", 1)
+        self.interval_combo.addItem("3 segundos", 3)
         self.interval_combo.addItem("5 segundos", 5)
         self.interval_combo.addItem("10 segundos", 10)
+
         self.interval_combo.addItem("15 segundos", 15)
         self.interval_combo.addItem("30 segundos", 30)
         self.interval_combo.addItem("1 minuto", 60)
@@ -445,7 +483,14 @@ class CameraDetailDialog(QDialog):
             self.browser_btn.clicked.connect(self._open_in_browser)
             controls_layout.addWidget(self.browser_btn)
         
+        # Botón desacoplar
+        self.undock_btn = QPushButton("🔓 Desacoplar")
+        self.undock_btn.clicked.connect(self._on_undock_clicked)
+        self.undock_btn.setToolTip("Abrir en ventana independiente")
+        controls_layout.addWidget(self.undock_btn)
+        
         layout.addLayout(controls_layout)
+
         
         # Botón cerrar
         close_layout = QHBoxLayout()
@@ -628,6 +673,14 @@ class CameraDetailDialog(QDialog):
             from PySide6.QtCore import QUrl
             QDesktopServices.openUrl(QUrl(self.camera.url))
             logger.info(f"Abriendo URL en navegador: {self.camera.url}")
+    
+    def _on_undock_clicked(self):
+        """
+        Callback cuando se hace clic en desacoplar.
+        """
+        self.undock_requested.emit(self.camera.id)
+        # self.close() # Opcional: cerrar el diálogo al desacoplar
+
     
     def _on_image_loaded(self, camera_id: int, pixmap: QPixmap):
         """

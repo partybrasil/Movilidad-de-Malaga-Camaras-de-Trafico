@@ -8,9 +8,10 @@ barra lateral, encabezado, vistas lista/cuadrícula, filtros, etc.
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QLineEdit, QComboBox, QStackedWidget,
-    QScrollArea, QGridLayout, QSplitter, QTextBrowser,
-    QStatusBar, QMessageBox, QFrame
+    QScrollArea, QGridLayout, QStatusBar, QMessageBox, QFrame,
+    QSystemTrayIcon, QMenu
 )
+
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 import logging
@@ -18,7 +19,9 @@ from typing import Optional
 
 from src.controllers.camera_controller import CameraController
 from src.views.camera_widget import CameraWidget, CameraListItem, CameraDetailDialog
+from src.views.floating_camera import FloatingCameraWindow
 from src.views.styles import get_theme, get_available_themes, get_text_color, get_textbox_background
+
 from src.views.map_view import MapView
 from src.models.camera import Camera
 from src.views.timelapse_library import TimelapseLibraryDialog
@@ -54,9 +57,13 @@ class MainWindow(QMainWindow):
         self.thumbnail_zoom_level = config.DEFAULT_THUMBNAIL_ZOOM  # Nivel de zoom actual (1-5)
         self.timelapse_dialog: TimelapseLibraryDialog | None = None
         self.map_view: MapView | None = None  # Vista de mapa
+        self.floating_cameras = {}  # camera_id -> FloatingCameraWindow
+        self.tray_icon = None
         
         self._setup_ui()
+        self._setup_tray_icon()
         self._connect_signals()
+
         self._apply_theme()
         self._update_timelapse_indicator(self.controller.get_timelapse_sessions())
         
@@ -714,7 +721,9 @@ class MainWindow(QMainWindow):
         for camera in cameras:
             item_widget = CameraListItem(camera)
             item_widget.camera_clicked.connect(self._show_camera_details)
+            item_widget.undock_requested.connect(self._handle_undock_request)
             self.list_layout.addWidget(item_widget)
+
             self.camera_widgets_by_view["lista"][camera.id] = item_widget
 
         self.list_layout.addStretch()
@@ -736,6 +745,8 @@ class MainWindow(QMainWindow):
             camera_widget = CameraWidget(camera, thumbnail_size=thumbnail_size)
             camera_widget.camera_clicked.connect(self._show_camera_details)
             camera_widget.image_reload_requested.connect(self._request_image_reload)
+            camera_widget.undock_requested.connect(self._handle_undock_request)
+
 
             self.grid_layout.addWidget(camera_widget, row, col)
             self.camera_widgets_by_view["cuadricula"][camera.id] = camera_widget
@@ -763,6 +774,8 @@ class MainWindow(QMainWindow):
             camera_widget = CameraWidget(camera, thumbnail_size=thumbnail_size)
             camera_widget.camera_clicked.connect(self._show_camera_details)
             camera_widget.image_reload_requested.connect(self._request_image_reload)
+            camera_widget.undock_requested.connect(self._handle_undock_request)
+
 
             self.favorites_layout.addWidget(camera_widget, row, col)
             self.camera_widgets_by_view["favoritos"][camera.id] = camera_widget
@@ -1302,7 +1315,9 @@ class MainWindow(QMainWindow):
             self.controller,
             self
         )
+        detail_dialog.undock_requested.connect(self._handle_undock_request)
         detail_dialog.exec()
+
     
     def _show_about(self):
         """
@@ -1351,11 +1366,99 @@ class MainWindow(QMainWindow):
     
     def closeEvent(self, event):
         """
-        Maneja el cierre de la ventana.
+        Maneja el cierre de la ventana, minimizando al tray si hay cámaras flotantes.
         """
+        if self.tray_icon and self.tray_icon.isVisible():
+            self.hide()
+            self.status_bar.showMessage("La aplicación sigue ejecutándose en segundo plano.", 3000)
+            self.tray_icon.showMessage(
+                config.WINDOW_TITLE,
+                "La aplicación se ha minimizado a la bandeja del sistema.",
+                QSystemTrayIcon.Information,
+                2000
+            )
+            event.ignore()
+        else:
+            self._exit_app()
+            event.accept()
+
+    def _exit_app(self):
+        """Cierre definitivo de la aplicación."""
         self.controller.stop_auto_refresh()
+        # Cerrar todas las cámaras flotantes
+        for window in list(self.floating_cameras.values()):
+            window.close()
         logger.info("Aplicación cerrada")
-        event.accept()
+
+    def _setup_tray_icon(self):
+        """Configura el icono en la bandeja del sistema."""
+        self.tray_icon = QSystemTrayIcon(self)
+        # Usar un icono por defecto o uno del tema si existe
+        # self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
+        # Intentar cargar icono propio si existe, si no, uno de sistema
+        from PySide6.QtWidgets import QStyle
+        self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_ComputerIcon))
+        
+        tray_menu = QMenu()
+        show_action = tray_menu.addAction("Restaurar Ventana")
+        show_action.triggered.connect(self.showNormal)
+        
+        tray_menu.addSeparator()
+        
+        exit_action = tray_menu.addAction("Salir Completamente")
+        exit_action.triggered.connect(self._manual_exit)
+        
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self._on_tray_activated)
+        self.tray_icon.show()
+
+    def _on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.Trigger:
+            if self.isVisible():
+                self.hide()
+            else:
+                self.showNormal()
+                self.activateWindow()
+
+    def _manual_exit(self):
+        """Cierra la app saltándose el closeEvent o forzando la salida."""
+        self.tray_icon.hide()
+        self._exit_app()
+        import sys
+        sys.exit(0)
+
+    def _handle_undock_request(self, camera_id: int):
+        """Gestiona la creación de una ventana flotante para una cámara."""
+        if camera_id in self.floating_cameras:
+            self.floating_cameras[camera_id].showNormal()
+            self.floating_cameras[camera_id].activateWindow()
+            return
+
+        if len(self.floating_cameras) >= config.MAX_FLOATING_CAMERAS:
+            QMessageBox.warning(
+                self,
+                "Límite alcanzado",
+                f"No puedes desacoplar más de {config.MAX_FLOATING_CAMERAS} cámaras simultáneamente."
+            )
+            return
+
+        camera = self._get_camera_by_id(camera_id)
+        if not camera:
+            return
+
+        window = FloatingCameraWindow(camera, self.controller.image_loader, self)
+        window.closed.connect(self._on_floating_camera_closed)
+        window.show()
+        self.floating_cameras[camera_id] = window
+        
+        self.status_bar.showMessage(f"Cámara {camera.nombre} desacoplada", 3000)
+
+    def _on_floating_camera_closed(self, camera_id: int):
+        """Limpia la referencia cuando se cierra una ventana flotante."""
+        if camera_id in self.floating_cameras:
+            del self.floating_cameras[camera_id]
+            logger.info(f"Ventana flotante de cámara {camera_id} eliminada")
+
 
     def resizeEvent(self, event):
         """Ajusta las cuadrículas cuando cambia el tamaño de la ventana."""

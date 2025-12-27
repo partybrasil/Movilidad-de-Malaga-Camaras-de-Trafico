@@ -39,7 +39,9 @@ La aplicación sigue el patrón **MVC (Model-View-Controller)** con una arquitec
 │              VIEW (Interfaz)                 │
 │  - main_window.py                            │
 │  - camera_widget.py                          │
+│  - floating_camera.py                        │
 │  - styles.py                                 │
+
 └──────┬────────────────────────────▲──────────┘
        │ Eventos                    │ Actualizar UI
        ▼                            │
@@ -280,6 +282,28 @@ class CameraListItem(QWidget):
 - Mostrar imagen en tiempo real
 - Gestionar estados (cargando, error)
 - Emitir eventos de interacción
+
+#### `floating_camera.py`
+
+```python
+class FloatingCameraWindow(QMainWindow):
+    """Ventana independiente para una cámara"""
+    
+    Señales:
+    - closed(int)                 # Notifica cierre al MainWindow
+    
+    Características:
+    - Minimalista y sin bordes de controles internos
+    - Menú contextual (clic derecho) para intervalos
+    - Auto-refresco independiente
+    - Layout elástico para redimensionamiento
+```
+
+**Responsabilidades:**
+- Permitir visualización en segundo monitor
+- Mantener refresco independiente de la ventana principal
+- Ofrecer controles de tiempo específicos por cámara
+
 
 #### `styles.py`
 
@@ -587,6 +611,10 @@ La arquitectura está diseñada para:
 - ✅ Performance óptimo
 - ✅ Experiencia de usuario fluida
 - ✅ Código profesional y limpio
+- ✅ **Soporte Multi-Monitor**: Ventanas desacoplables con refresco independiente.
+- ✅ **Integración System Tray**: Minimización al área de notificación y persistencia de cámaras flotantes.
+- ✅ **Gestión de Sesiones**: Límite de 15 cámaras desacopladas.
+
 
 **Preparada para evolucionar** sin necesidad de refactoring mayor.
 

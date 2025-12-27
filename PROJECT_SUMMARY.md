@@ -8,12 +8,15 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Archivos Python creados** | 10 |
-| **Líneas de código** | ~2,500 |
-| **Clases principales** | 8 |
+| **Archivos Python creados** | 11 |
+| **Líneas de código** | ~3,200 |
+| **Clases principales** | 10 |
 | **Tiempo de desarrollo** | Optimizado con IA |
 | **Arquitectura** | MVC Profesional |
 | **Calidad** | MASTER-LEVEL |
+| **Multi-Monitor** | ✅ Nativo (15 cámaras) |
+| **System Tray** | ✅ Integrado |
+
 
 ---
 
@@ -46,9 +49,11 @@ Movilidad-de-Malaga-Camaras-de-Trafico/
     │
     ├── 📁 views/                       ✅ Interfaz gráfica
     │   ├── __init__.py                 ✅
-    │   ├── main_window.py              ✅ Ventana principal (700 líneas)
-    │   ├── camera_widget.py            ✅ Widgets cámara (330 líneas)
+    │   ├── main_window.py              ✅ Ventana principal (1450+ líneas)
+    │   ├── camera_widget.py            ✅ Widgets cámara (750+ líneas)
+    │   ├── floating_camera.py          ✅ Ventanas desacopladas (170+ líneas)
     │   └── styles.py                   ✅ Temas Qt (300 líneas)
+
     │
     ├── 📁 controllers/                 ✅ Lógica negocio
     │   ├── __init__.py                 ✅
@@ -85,6 +90,10 @@ Movilidad-de-Malaga-Camaras-de-Trafico/
 - [x] **Barra de estado** con mensajes
 - [x] **Logging** estructurado
 - [x] **Gestión de errores** robusta
+- [x] **Soporte Multi-Monitor** (Ventanas flotantes)
+- [x] **System Tray** (Minimizar a la bandeja)
+- [x] **Refresh Intervals** personalizables (1s, 3s, 5s...)
+
 
 ### ✅ UI/UX Features
 
@@ -238,6 +247,17 @@ El código está **preparado** para estas extensiones futuras:
 
 ---
 
+## 🛰️ Evolución Reciente (Diciembre 2025)
+
+### Soporte Multi-Monitor y Productividad
+- **Desacoplamiento**: Capacidad de mover cualquier cámara a una ventana flotante independiente.
+- **Bandeja de Sistema**: Minimización al tray icon para liberar espacio en la barra de tareas.
+- **Control de Intervalos**: Menú contextual en cámaras flotantes para ajustar la velocidad de refresco punto a punto.
+- **Resiliencia**: Gestión de vida de ventanas vinculada a la aplicación principal.
+
+---
+
+
 ## 💡 Highlights Técnicos
 
 ### 🏆 Mejores Decisiones de Diseño
@@ -377,6 +397,7 @@ Has recibido un **prototipo de calidad MASTER-LEVEL** que:
 ---
 
 **Desarrollado aplicando los 7 Protocolos FUSION**  
-**Versión**: 1.0.0  
-**Fecha**: 30 de Octubre de 2025  
+**Versión**: 1.5.0  
+**Fecha**: Diciembre 2025  
 **Calidad**: MASTER-LEVEL ⭐⭐⭐⭐⭐
+

@@ -173,10 +173,12 @@ _Próximamente en futuras versiones_
 - El filtro de zonas agrupa automáticamente
 - Busca por nombre de calle para encontrar cámaras específicas
 
-### Tip 3: Monitoriza tráfico
-- Activa auto-refresco
-- Coloca varias cámaras en vista cuadrícula
-- Minimiza la ventana y consulta periódicamente
+### Tip 3: Monitoriza en múltiples pantallas
+- Usa el botón **🔓 Desacoplar** para abrir cámaras en ventanas flotantes.
+- Mueve estas ventanas a otros monitores o déjalas visibles en el escritorio.
+- Haz clic derecho en la ventana flotante para ajustar su intervalo (desde 1s para refresco ultra-rápido).
+- Minimiza la app principal al tray y las cámaras seguirán funcionando.
+
 
 ### Tip 4: Accede a la web oficial
 - Clic en "Ver detalles" de cualquier cámara

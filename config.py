@@ -48,6 +48,10 @@ DEFAULT_THUMBNAIL_ZOOM = 3  # Nivel de zoom por defecto (1-5)
 MAX_FAVORITES = 25  # Límite de cámaras favoritas (configurable)
 APP_DATA_DIR_NAME = "movilidad_malaga"
 FAVORITES_FILE_NAME = "favorites.json"
+MAX_FLOATING_CAMERAS = 15
+FLOATING_WINDOW_REFRESH_INTERVALS = [1, 3, 5, 10, 15, 30, 60, 120, 300]
+
+
 
 # Configuración de caché
 ENABLE_IMAGE_CACHE = True

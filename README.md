@@ -46,6 +46,15 @@ Aplicación de escritorio moderna y robusta para visualizar en tiempo real las c
   - **Mini-reproductor en vivo** integrado en el popup del mapa
   - **Selector de actualización**: Elige la frecuencia (1s, 3s, 5s...)
   - Control automático de recursos al cerrar popups
+- 🖥️ **Soporte Multi-Monitor Nativo**:
+  - **Cámaras Desacoplables**: Abre cualquier cámara en una ventana independiente flotante.
+  - **Gestión Inteligente**: Soporta hasta 15 cámaras simultáneas con redimensionamiento dinámico.
+  - **Tiempos de Actualización Flexibles**: Cambia la frecuencia (1s, 3s, 5s...) mediante clic derecho en cámaras flotantes.
+- 📥 **Integración con System Tray**:
+  - **Minimizar a la Bandeja**: La aplicación puede seguir ejecutándose en segundo plano.
+  - **Persistencia de Vistas**: Las cámaras desacopladas permanecen visibles incluso con la app principal minimizada.
+  - **Menú Rápido**: Restaurar ventana o salir completamente desde el icono del sistema.
+
 
 ### �🎨 Personalización
 - 🌓 **Temas claro y oscuro** con transición suave
@@ -275,6 +284,21 @@ Accede a información completa de cualquier cámara:
 **Temas Disponibles:**
 - **Claro**: Fondo blanco, ideal para ambientes luminosos
 - **Oscuro**: Fondo oscuro, reduce fatiga visual en ambientes con poca luz
+
+### 🖥️ Soporte Multi-Monitor y Cámaras Flotantes
+
+La aplicación permite una gestión avanzada de múltiples pantallas:
+
+1. **Desacoplar**: Haz clic en el botón "🔓 Desacoplar" en cualquier vista o diálogo de detalles.
+2. **Ventanas Flotantes**: Cada cámara se abre en una ventana minimalista que puedes mover a cualquier monitor.
+3. **Redimensionar**: Cambia el tamaño de la ventana flotante; la imagen se ajustará manteniendo el aspecto.
+4. **Menú Contextual**: Haz clic derecho en la ventana flotante para:
+   - Cambiar el **intervalo de actualización** (desde 1 segundo hasta 5 minutos).
+   - Forzar **actualización manual**.
+   - Ver información de la cámara.
+5. **Minimizar al Tray**: Al cerrar la ventana principal, la app se oculta en el área de notificación (cerca del reloj). Esto permite monitorizar cámaras flotantes sin tener la ventana principal abierta.
+6. **Límite**: Puedes tener hasta 15 cámaras flotantes activas a la vez.
+
 
 ### 🎥 Timelapse
 
