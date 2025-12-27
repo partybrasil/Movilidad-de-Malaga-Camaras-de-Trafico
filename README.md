@@ -36,6 +36,17 @@ Aplicación de escritorio moderna y robusta para visualizar en tiempo real las c
 - 📦 **Exportación a MP4 o GIF** directamente desde la aplicación
 - 🛡️ **Grabaciones resilientes** ante fallos temporales de red o cámara
 
+### 🗺️ Mapa Interactivo
+- 📍 **Geolocalización precisa** de todas las cámaras en un mapa interactivo
+- 🚶 **Street View Integrado**:
+  - Acceso directo a Google Street View desde cada cámara
+  - Navegación virtual por las calles de Málaga
+  - Accesible vía menú contextual (clic derecho) en el mapa
+- 📹 **Tarjetas de Cámara Mejoradas**:
+  - **Mini-reproductor en vivo** integrado en el popup del mapa
+  - **Selector de actualización**: Elige la frecuencia (1s, 3s, 5s...)
+  - Control automático de recursos al cerrar popups
+
 ### �🎨 Personalización
 - 🌓 **Temas claro y oscuro** con transición suave
 - � **Configuración flexible** mediante archivo config.py
@@ -626,14 +637,15 @@ Los datos provienen del **Portal de Datos Abiertos del Ayuntamiento de Málaga**
 ## 🔮 Roadmap y Mejoras Futuras
 
 ### ✅ Últimas Novedades
+- ✅ **Mapa Interactivo Completo**: Street View, mini-player en vivo y clustering inteligente.
 - ✅ **Timelapse completo**: Grabación, biblioteca, reproducción multi-velocidad y exportación MP4/GIF.
 
 ### 🎯 Versión 2.0 (En Planificación)
-- [ ] **Mapa interactivo** con ubicación de cámaras
-  - Integración con OpenStreetMap/Leaflet
-  - Marcadores clicables en el mapa
-  - Vista de mapa en tiempo real
-  - Navegación por ubicación geográfica
+- [x] **Mapa interactivo** con ubicación de cámaras
+  - [x] Integración con mapas (Folium/Leaflet)
+  - [x] Marcadores clicables en el mapa
+  - [x] Vista de mapa en tiempo real (Mini-player)
+  - [x] Navegación por ubicación geográfica (Street View)
 
 - [ ] **Mejoras de visualización**
   - Vista de comparación múltiple (2-4 cámaras simultáneas)

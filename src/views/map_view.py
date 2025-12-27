@@ -266,16 +266,34 @@ class MapView(QWidget):
                 
                 # Crear popup con información de la cámara
                 popup_html = f"""
-                <div style="width: 250px; font-family: Arial, sans-serif;">
+                <div style="width: 300px; font-family: Arial, sans-serif;">
                     <h4 style="margin: 0 0 10px 0; color: {color};">📹 {camera.nombre}</h4>
+                    
+                    <!-- Mini Player & Controls -->
+                    <div class="camera-player" style="margin-bottom: 10px;">
+                        <img src="{camera.url_imagen}" 
+                             class="camera-live-feed" 
+                             data-url="{camera.url_imagen}"
+                             style="width: 100%; border-radius: 4px; border: 1px solid #ddd; min-height: 150px; background: #f0f0f0;">
+                        
+                        <div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; background: #f1f2f6; padding: 6px 10px; border-radius: 4px;">
+                            <span style="font-size: 12px; font-weight: bold; color: #2c3e50;">⏱️ Actualizar:</span>
+                            <select class="camera-interval-select" style="font-size: 12px; padding: 2px 5px; border: 1px solid #bdc3c7; border-radius: 3px;">
+                                <option value="1">1 s</option>
+                                <option value="3">3 s</option>
+                                <option value="5" selected>5 s</option>
+                                <option value="10">10 s</option>
+                                <option value="15">15 s</option>
+                                <option value="20">20 s</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <p style="margin: 5px 0;"><strong>Ubicación:</strong><br>{camera.direccion}</p>
                     <p style="margin: 5px 0;"><strong>Distrito:</strong> {camera.get_distrito_display()}</p>
                     {'<p style="margin: 5px 0;"><strong>Acceso:</strong> ' + camera.acceso + '</p>' if camera.acceso else ''}
                     <p style="margin: 10px 0 5px 0;">
                         <a href="{camera.url}" target="_blank" style="color: #3498db;">🔗 Ver en web oficial</a>
-                    </p>
-                    <p style="margin: 5px 0;">
-                        <a href="{camera.url_imagen}" target="_blank" style="color: #3498db;">📷 Ver imagen actual</a>
                     </p>
                     <p style="margin: 5px 0;">
                         <a href="{config.STREET_VIEW_URL_TEMPLATE.format(lat=lat, lon=lon)}" target="_blank" style="color: #e67e22; font-weight: bold;">
@@ -291,7 +309,7 @@ class MapView(QWidget):
                 # Crear marcador
                 folium.Marker(
                     location=[lat, lon],
-                    popup=folium.Popup(popup_html, max_width=300),
+                    popup=folium.Popup(popup_html, max_width=320),
                     tooltip=f"{camera.nombre}",
                     icon=folium.Icon(
                         color='blue' if not camera.distrito else 'red',
@@ -308,7 +326,7 @@ class MapView(QWidget):
                 legend_html = self._create_legend_html()
                 m.get_root().html.add_child(folium.Element(legend_html))
             
-            # --- Integración de Street View (Click Derecho) ---
+            # --- Integración de Scripts (Street View + Auto Refresh) ---
             map_var_name = m.get_name()
             js_script = f"""
             <script>
@@ -319,10 +337,11 @@ class MapView(QWidget):
                 
                 // Esperar a que el mapa esté listo
                 window.addEventListener('load', function() {{
-                    // Intentar acceder a la variable del mapa
+                    // Obtener instancia del mapa
                     var mapInstance = {map_var_name};
                     
                     if (mapInstance) {{
+                        // --- Click Derecho Street View ---
                         mapInstance.on('contextmenu', function(e) {{
                             var lat = e.latlng.lat;
                             var lon = e.latlng.lng;
@@ -338,7 +357,49 @@ class MapView(QWidget):
                                 .setContent(content)
                                 .openOn(mapInstance);
                         }});
-                        console.log("Street View integration initialized");
+                        
+                        // --- Auto Refresh de Cámaras ---
+                        mapInstance.on('popupopen', function(e) {{
+                            var popupNode = e.popup._contentNode;
+                            var img = popupNode.querySelector('.camera-live-feed');
+                            var select = popupNode.querySelector('.camera-interval-select');
+                            
+                            if (img && select) {{
+                                var url = img.getAttribute('data-url');
+                                var timerId = null;
+                                
+                                function refreshImage() {{
+                                    // Añadir timestamp para evitar caché
+                                    var uniqueUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + new Date().getTime();
+                                    img.src = uniqueUrl;
+                                }}
+                                
+                                function updateTimer() {{
+                                    if (timerId) clearInterval(timerId);
+                                    var intervalSec = parseInt(select.value);
+                                    if (intervalSec > 0) {{
+                                        timerId = setInterval(refreshImage, intervalSec * 1000);
+                                    }}
+                                    e.popup._cameraTimer = timerId;
+                                }}
+                                
+                                // Escuchar cambios
+                                select.addEventListener('change', updateTimer);
+                                
+                                // Iniciar inmediatamente
+                                updateTimer();
+                            }}
+                        }});
+                        
+                        mapInstance.on('popupclose', function(e) {{
+                            // Limpiar timer si existe
+                            if (e.popup._cameraTimer) {{
+                                clearInterval(e.popup._cameraTimer);
+                                e.popup._cameraTimer = null;
+                            }}
+                        }});
+                        
+                        console.log("Map enhancements initialized (Street View + Camera Player)");
                     }}
                 }});
             </script>
