@@ -36,6 +36,8 @@ class TimelapseExporter:
         if fmt_lower == "gif":
             TimelapseExporter._export_gif(frames, target_path, session.interval)
         else:
+            # Los formatos de video están deshabilitados en config.py por dependencias externas
+            # pero mantenemos la lógica por si el usuario decide instalarlas manualmente.
             TimelapseExporter._export_video(frames, target_path, fps)
 
         session.register_export(fmt_lower)

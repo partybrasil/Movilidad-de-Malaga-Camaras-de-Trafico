@@ -1,0 +1,614 @@
+{
+  "session_id": "59-20251228223550-1",
+  "camera_id": 59,
+  "camera_name": "TV28-ALAMEDA",
+  "camera_address": "ALAMEDA PRINCIPAL, 19 ",
+  "image_url": "https://ctraficomovilidad.malaga.eu/recursos/movilidad/camaras_trafico/TV-28.jpg",
+  "interval": 3,
+  "started_at": "2025-12-28T22:35:50",
+  "base_path": "timelapses\\tv28-alameda\\2025-12-28\\session-59-20251228223550-1",
+  "status": "finished",
+  "ended_at": "2025-12-28T22:43:25",
+  "frame_count": 148,
+  "frames": [
+    {
+      "filename": "frame_00001.jpg",
+      "captured_at": "2025-12-28T22:35:50"
+    },
+    {
+      "filename": "frame_00002.jpg",
+      "captured_at": "2025-12-28T22:35:53"
+    },
+    {
+      "filename": "frame_00003.jpg",
+      "captured_at": "2025-12-28T22:35:56"
+    },
+    {
+      "filename": "frame_00004.jpg",
+      "captured_at": "2025-12-28T22:35:59"
+    },
+    {
+      "filename": "frame_00005.jpg",
+      "captured_at": "2025-12-28T22:36:02"
+    },
+    {
+      "filename": "frame_00006.jpg",
+      "captured_at": "2025-12-28T22:36:05"
+    },
+    {
+      "filename": "frame_00007.jpg",
+      "captured_at": "2025-12-28T22:36:08"
+    },
+    {
+      "filename": "frame_00008.jpg",
+      "captured_at": "2025-12-28T22:36:11"
+    },
+    {
+      "filename": "frame_00009.jpg",
+      "captured_at": "2025-12-28T22:36:14"
+    },
+    {
+      "filename": "frame_00010.jpg",
+      "captured_at": "2025-12-28T22:36:17"
+    },
+    {
+      "filename": "frame_00011.jpg",
+      "captured_at": "2025-12-28T22:36:20"
+    },
+    {
+      "filename": "frame_00012.jpg",
+      "captured_at": "2025-12-28T22:36:23"
+    },
+    {
+      "filename": "frame_00013.jpg",
+      "captured_at": "2025-12-28T22:36:26"
+    },
+    {
+      "filename": "frame_00014.jpg",
+      "captured_at": "2025-12-28T22:36:29"
+    },
+    {
+      "filename": "frame_00015.jpg",
+      "captured_at": "2025-12-28T22:36:32"
+    },
+    {
+      "filename": "frame_00016.jpg",
+      "captured_at": "2025-12-28T22:36:35"
+    },
+    {
+      "filename": "frame_00017.jpg",
+      "captured_at": "2025-12-28T22:36:38"
+    },
+    {
+      "filename": "frame_00018.jpg",
+      "captured_at": "2025-12-28T22:36:41"
+    },
+    {
+      "filename": "frame_00019.jpg",
+      "captured_at": "2025-12-28T22:36:44"
+    },
+    {
+      "filename": "frame_00020.jpg",
+      "captured_at": "2025-12-28T22:36:47"
+    },
+    {
+      "filename": "frame_00021.jpg",
+      "captured_at": "2025-12-28T22:36:50"
+    },
+    {
+      "filename": "frame_00022.jpg",
+      "captured_at": "2025-12-28T22:36:53"
+    },
+    {
+      "filename": "frame_00023.jpg",
+      "captured_at": "2025-12-28T22:36:56"
+    },
+    {
+      "filename": "frame_00024.jpg",
+      "captured_at": "2025-12-28T22:36:59"
+    },
+    {
+      "filename": "frame_00025.jpg",
+      "captured_at": "2025-12-28T22:37:02"
+    },
+    {
+      "filename": "frame_00026.jpg",
+      "captured_at": "2025-12-28T22:37:05"
+    },
+    {
+      "filename": "frame_00027.jpg",
+      "captured_at": "2025-12-28T22:37:08"
+    },
+    {
+      "filename": "frame_00028.jpg",
+      "captured_at": "2025-12-28T22:37:11"
+    },
+    {
+      "filename": "frame_00029.jpg",
+      "captured_at": "2025-12-28T22:37:14"
+    },
+    {
+      "filename": "frame_00030.jpg",
+      "captured_at": "2025-12-28T22:37:17"
+    },
+    {
+      "filename": "frame_00031.jpg",
+      "captured_at": "2025-12-28T22:37:20"
+    },
+    {
+      "filename": "frame_00032.jpg",
+      "captured_at": "2025-12-28T22:37:23"
+    },
+    {
+      "filename": "frame_00033.jpg",
+      "captured_at": "2025-12-28T22:37:26"
+    },
+    {
+      "filename": "frame_00034.jpg",
+      "captured_at": "2025-12-28T22:37:29"
+    },
+    {
+      "filename": "frame_00035.jpg",
+      "captured_at": "2025-12-28T22:37:32"
+    },
+    {
+      "filename": "frame_00036.jpg",
+      "captured_at": "2025-12-28T22:37:35"
+    },
+    {
+      "filename": "frame_00037.jpg",
+      "captured_at": "2025-12-28T22:37:38"
+    },
+    {
+      "filename": "frame_00038.jpg",
+      "captured_at": "2025-12-28T22:37:41"
+    },
+    {
+      "filename": "frame_00039.jpg",
+      "captured_at": "2025-12-28T22:37:44"
+    },
+    {
+      "filename": "frame_00040.jpg",
+      "captured_at": "2025-12-28T22:37:47"
+    },
+    {
+      "filename": "frame_00041.jpg",
+      "captured_at": "2025-12-28T22:37:50"
+    },
+    {
+      "filename": "frame_00042.jpg",
+      "captured_at": "2025-12-28T22:37:53"
+    },
+    {
+      "filename": "frame_00043.jpg",
+      "captured_at": "2025-12-28T22:37:56"
+    },
+    {
+      "filename": "frame_00044.jpg",
+      "captured_at": "2025-12-28T22:37:59"
+    },
+    {
+      "filename": "frame_00045.jpg",
+      "captured_at": "2025-12-28T22:38:02"
+    },
+    {
+      "filename": "frame_00046.jpg",
+      "captured_at": "2025-12-28T22:38:05"
+    },
+    {
+      "filename": "frame_00047.jpg",
+      "captured_at": "2025-12-28T22:38:08"
+    },
+    {
+      "filename": "frame_00048.jpg",
+      "captured_at": "2025-12-28T22:38:11"
+    },
+    {
+      "filename": "frame_00049.jpg",
+      "captured_at": "2025-12-28T22:38:14"
+    },
+    {
+      "filename": "frame_00050.jpg",
+      "captured_at": "2025-12-28T22:38:17"
+    },
+    {
+      "filename": "frame_00051.jpg",
+      "captured_at": "2025-12-28T22:38:20"
+    },
+    {
+      "filename": "frame_00052.jpg",
+      "captured_at": "2025-12-28T22:38:23"
+    },
+    {
+      "filename": "frame_00053.jpg",
+      "captured_at": "2025-12-28T22:38:26"
+    },
+    {
+      "filename": "frame_00054.jpg",
+      "captured_at": "2025-12-28T22:38:29"
+    },
+    {
+      "filename": "frame_00055.jpg",
+      "captured_at": "2025-12-28T22:38:32"
+    },
+    {
+      "filename": "frame_00056.jpg",
+      "captured_at": "2025-12-28T22:38:35"
+    },
+    {
+      "filename": "frame_00057.jpg",
+      "captured_at": "2025-12-28T22:38:38"
+    },
+    {
+      "filename": "frame_00058.jpg",
+      "captured_at": "2025-12-28T22:38:41"
+    },
+    {
+      "filename": "frame_00059.jpg",
+      "captured_at": "2025-12-28T22:38:44"
+    },
+    {
+      "filename": "frame_00060.jpg",
+      "captured_at": "2025-12-28T22:38:47"
+    },
+    {
+      "filename": "frame_00061.jpg",
+      "captured_at": "2025-12-28T22:38:50"
+    },
+    {
+      "filename": "frame_00063.jpg",
+      "captured_at": "2025-12-28T22:38:56"
+    },
+    {
+      "filename": "frame_00064.jpg",
+      "captured_at": "2025-12-28T22:38:59"
+    },
+    {
+      "filename": "frame_00065.jpg",
+      "captured_at": "2025-12-28T22:39:02"
+    },
+    {
+      "filename": "frame_00067.jpg",
+      "captured_at": "2025-12-28T22:39:08"
+    },
+    {
+      "filename": "frame_00068.jpg",
+      "captured_at": "2025-12-28T22:39:11"
+    },
+    {
+      "filename": "frame_00069.jpg",
+      "captured_at": "2025-12-28T22:39:14"
+    },
+    {
+      "filename": "frame_00070.jpg",
+      "captured_at": "2025-12-28T22:39:17"
+    },
+    {
+      "filename": "frame_00071.jpg",
+      "captured_at": "2025-12-28T22:39:20"
+    },
+    {
+      "filename": "frame_00072.jpg",
+      "captured_at": "2025-12-28T22:39:23"
+    },
+    {
+      "filename": "frame_00073.jpg",
+      "captured_at": "2025-12-28T22:39:26"
+    },
+    {
+      "filename": "frame_00074.jpg",
+      "captured_at": "2025-12-28T22:39:29"
+    },
+    {
+      "filename": "frame_00075.jpg",
+      "captured_at": "2025-12-28T22:39:32"
+    },
+    {
+      "filename": "frame_00076.jpg",
+      "captured_at": "2025-12-28T22:39:35"
+    },
+    {
+      "filename": "frame_00077.jpg",
+      "captured_at": "2025-12-28T22:39:38"
+    },
+    {
+      "filename": "frame_00078.jpg",
+      "captured_at": "2025-12-28T22:39:41"
+    },
+    {
+      "filename": "frame_00079.jpg",
+      "captured_at": "2025-12-28T22:39:44"
+    },
+    {
+      "filename": "frame_00080.jpg",
+      "captured_at": "2025-12-28T22:39:47"
+    },
+    {
+      "filename": "frame_00081.jpg",
+      "captured_at": "2025-12-28T22:39:50"
+    },
+    {
+      "filename": "frame_00082.jpg",
+      "captured_at": "2025-12-28T22:39:53"
+    },
+    {
+      "filename": "frame_00083.jpg",
+      "captured_at": "2025-12-28T22:39:56"
+    },
+    {
+      "filename": "frame_00084.jpg",
+      "captured_at": "2025-12-28T22:39:59"
+    },
+    {
+      "filename": "frame_00085.jpg",
+      "captured_at": "2025-12-28T22:40:02"
+    },
+    {
+      "filename": "frame_00086.jpg",
+      "captured_at": "2025-12-28T22:40:05"
+    },
+    {
+      "filename": "frame_00087.jpg",
+      "captured_at": "2025-12-28T22:40:08"
+    },
+    {
+      "filename": "frame_00088.jpg",
+      "captured_at": "2025-12-28T22:40:11"
+    },
+    {
+      "filename": "frame_00089.jpg",
+      "captured_at": "2025-12-28T22:40:14"
+    },
+    {
+      "filename": "frame_00090.jpg",
+      "captured_at": "2025-12-28T22:40:17"
+    },
+    {
+      "filename": "frame_00091.jpg",
+      "captured_at": "2025-12-28T22:40:20"
+    },
+    {
+      "filename": "frame_00092.jpg",
+      "captured_at": "2025-12-28T22:40:23"
+    },
+    {
+      "filename": "frame_00093.jpg",
+      "captured_at": "2025-12-28T22:40:26"
+    },
+    {
+      "filename": "frame_00094.jpg",
+      "captured_at": "2025-12-28T22:40:29"
+    },
+    {
+      "filename": "frame_00095.jpg",
+      "captured_at": "2025-12-28T22:40:32"
+    },
+    {
+      "filename": "frame_00096.jpg",
+      "captured_at": "2025-12-28T22:40:35"
+    },
+    {
+      "filename": "frame_00097.jpg",
+      "captured_at": "2025-12-28T22:40:38"
+    },
+    {
+      "filename": "frame_00098.jpg",
+      "captured_at": "2025-12-28T22:40:41"
+    },
+    {
+      "filename": "frame_00099.jpg",
+      "captured_at": "2025-12-28T22:40:44"
+    },
+    {
+      "filename": "frame_00100.jpg",
+      "captured_at": "2025-12-28T22:40:47"
+    },
+    {
+      "filename": "frame_00101.jpg",
+      "captured_at": "2025-12-28T22:40:50"
+    },
+    {
+      "filename": "frame_00102.jpg",
+      "captured_at": "2025-12-28T22:40:53"
+    },
+    {
+      "filename": "frame_00103.jpg",
+      "captured_at": "2025-12-28T22:40:56"
+    },
+    {
+      "filename": "frame_00104.jpg",
+      "captured_at": "2025-12-28T22:40:59"
+    },
+    {
+      "filename": "frame_00105.jpg",
+      "captured_at": "2025-12-28T22:41:02"
+    },
+    {
+      "filename": "frame_00106.jpg",
+      "captured_at": "2025-12-28T22:41:05"
+    },
+    {
+      "filename": "frame_00107.jpg",
+      "captured_at": "2025-12-28T22:41:08"
+    },
+    {
+      "filename": "frame_00108.jpg",
+      "captured_at": "2025-12-28T22:41:11"
+    },
+    {
+      "filename": "frame_00109.jpg",
+      "captured_at": "2025-12-28T22:41:14"
+    },
+    {
+      "filename": "frame_00110.jpg",
+      "captured_at": "2025-12-28T22:41:17"
+    },
+    {
+      "filename": "frame_00111.jpg",
+      "captured_at": "2025-12-28T22:41:20"
+    },
+    {
+      "filename": "frame_00112.jpg",
+      "captured_at": "2025-12-28T22:41:23"
+    },
+    {
+      "filename": "frame_00113.jpg",
+      "captured_at": "2025-12-28T22:41:26"
+    },
+    {
+      "filename": "frame_00114.jpg",
+      "captured_at": "2025-12-28T22:41:29"
+    },
+    {
+      "filename": "frame_00115.jpg",
+      "captured_at": "2025-12-28T22:41:32"
+    },
+    {
+      "filename": "frame_00116.jpg",
+      "captured_at": "2025-12-28T22:41:35"
+    },
+    {
+      "filename": "frame_00117.jpg",
+      "captured_at": "2025-12-28T22:41:38"
+    },
+    {
+      "filename": "frame_00118.jpg",
+      "captured_at": "2025-12-28T22:41:41"
+    },
+    {
+      "filename": "frame_00119.jpg",
+      "captured_at": "2025-12-28T22:41:44"
+    },
+    {
+      "filename": "frame_00120.jpg",
+      "captured_at": "2025-12-28T22:41:47"
+    },
+    {
+      "filename": "frame_00121.jpg",
+      "captured_at": "2025-12-28T22:41:50"
+    },
+    {
+      "filename": "frame_00122.jpg",
+      "captured_at": "2025-12-28T22:41:53"
+    },
+    {
+      "filename": "frame_00123.jpg",
+      "captured_at": "2025-12-28T22:41:56"
+    },
+    {
+      "filename": "frame_00124.jpg",
+      "captured_at": "2025-12-28T22:41:59"
+    },
+    {
+      "filename": "frame_00125.jpg",
+      "captured_at": "2025-12-28T22:42:02"
+    },
+    {
+      "filename": "frame_00126.jpg",
+      "captured_at": "2025-12-28T22:42:05"
+    },
+    {
+      "filename": "frame_00127.jpg",
+      "captured_at": "2025-12-28T22:42:08"
+    },
+    {
+      "filename": "frame_00128.jpg",
+      "captured_at": "2025-12-28T22:42:11"
+    },
+    {
+      "filename": "frame_00129.jpg",
+      "captured_at": "2025-12-28T22:42:14"
+    },
+    {
+      "filename": "frame_00130.jpg",
+      "captured_at": "2025-12-28T22:42:17"
+    },
+    {
+      "filename": "frame_00131.jpg",
+      "captured_at": "2025-12-28T22:42:20"
+    },
+    {
+      "filename": "frame_00133.jpg",
+      "captured_at": "2025-12-28T22:42:26"
+    },
+    {
+      "filename": "frame_00134.jpg",
+      "captured_at": "2025-12-28T22:42:29"
+    },
+    {
+      "filename": "frame_00136.jpg",
+      "captured_at": "2025-12-28T22:42:35"
+    },
+    {
+      "filename": "frame_00137.jpg",
+      "captured_at": "2025-12-28T22:42:38"
+    },
+    {
+      "filename": "frame_00138.jpg",
+      "captured_at": "2025-12-28T22:42:41"
+    },
+    {
+      "filename": "frame_00139.jpg",
+      "captured_at": "2025-12-28T22:42:44"
+    },
+    {
+      "filename": "frame_00140.jpg",
+      "captured_at": "2025-12-28T22:42:47"
+    },
+    {
+      "filename": "frame_00141.jpg",
+      "captured_at": "2025-12-28T22:42:50"
+    },
+    {
+      "filename": "frame_00142.jpg",
+      "captured_at": "2025-12-28T22:42:53"
+    },
+    {
+      "filename": "frame_00143.jpg",
+      "captured_at": "2025-12-28T22:42:56"
+    },
+    {
+      "filename": "frame_00144.jpg",
+      "captured_at": "2025-12-28T22:42:59"
+    },
+    {
+      "filename": "frame_00145.jpg",
+      "captured_at": "2025-12-28T22:43:02"
+    },
+    {
+      "filename": "frame_00146.jpg",
+      "captured_at": "2025-12-28T22:43:05"
+    },
+    {
+      "filename": "frame_00147.jpg",
+      "captured_at": "2025-12-28T22:43:08"
+    },
+    {
+      "filename": "frame_00148.jpg",
+      "captured_at": "2025-12-28T22:43:11"
+    },
+    {
+      "filename": "frame_00149.jpg",
+      "captured_at": "2025-12-28T22:43:14"
+    },
+    {
+      "filename": "frame_00150.jpg",
+      "captured_at": "2025-12-28T22:43:17"
+    },
+    {
+      "filename": "frame_00151.jpg",
+      "captured_at": "2025-12-28T22:43:20"
+    },
+    {
+      "filename": "frame_00152.jpg",
+      "captured_at": "2025-12-28T22:43:23"
+    }
+  ],
+  "duration_limit": null,
+  "exported_formats": [
+    "mpeg",
+    "mp4",
+    "avi",
+    "gif"
+  ]
+}

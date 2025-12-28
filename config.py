@@ -113,7 +113,9 @@ TIMELAPSE_FRAME_FORMAT = "jpg"
 TIMELAPSE_DEFAULT_INTERVAL = 5  # segundos
 TIMELAPSE_DEFAULT_DURATION = None  # segundos
 TIMELAPSE_MAX_ACTIVE_RECORDERS = 10
-TIMELAPSE_EXPORT_FORMATS = ["gif", "avi", "mp4", "mpeg"]
+# Formatos de exportación: Solo GIF por ahora para evitar dependencias externas como FFmpeg
+# que causan archivos corruptos en AVI, MP4 y MPEG.
+TIMELAPSE_EXPORT_FORMATS = ["gif"]
 TIMELAPSE_EXPORT_FPS = 8
 TIMELAPSE_PLAYBACK_SPEEDS = [
     0.05,
