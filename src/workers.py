@@ -22,6 +22,7 @@ from src.utils.coordinate_converter import get_converter
 import config
 
 TRAFFIC_CUTS_URL = "https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_cortesTrafico-4326.geojson"
+CLOTHING_CONTAINERS_URL = "https://datosabiertos.malaga.eu/recursos/ambiente/contenedores/da_medioAmbiente_contenedoresRopa-4326.geojson"
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +142,12 @@ class MapGenerationWorker(QObject):
             except Exception as e:
                 logger.error(f"Error añadiendo capa de cortes de tráfico: {e}")
 
+            # --- Añadir capa de Contenedores de Ropa ---
+            try:
+                self._add_clothing_containers_layer(m)
+            except Exception as e:
+                logger.error(f"Error añadiendo capa de contenedores de ropa: {e}")
+
             # Añadir controles y scripts
             folium.LayerControl().add_to(m)
             
@@ -214,6 +221,36 @@ class MapGenerationWorker(QObject):
         
         cuts_group.add_to(m)
         logger.info("Capa de cortes de tráfico añadida.")
+
+    def _add_clothing_containers_layer(self, m):
+        """Descarga y añade la capa de contenedores de ropa."""
+        logger.info("Descargando datos de contenedores de ropa...")
+        response = requests.get(CLOTHING_CONTAINERS_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Grupo para contenedores
+        containers_group = folium.FeatureGroup(name="👕 Contenedores de Ropa", show=False)
+        
+        folium.GeoJson(
+            data,
+            name="Contenedores de Ropa",
+            tooltip=folium.GeoJsonTooltip(
+                fields=['DIRECCION', 'NOMBRE'],
+                aliases=['📍 Ubicación:', '📦 Tipo:'],
+                localize=True
+            ),
+            popup=folium.GeoJsonPopup(
+                fields=['NOMBRE', 'DIRECCION', 'DESCRIPCION', 'TITULARIDAD'],
+                aliases=['Nombre', 'Dirección', 'Descripción', 'Titularidad'],
+                localize=True,
+                max_width=300
+            ),
+            marker=folium.Marker(icon=folium.Icon(icon='recycle', prefix='fa', color='green'))
+        ).add_to(containers_group)
+        
+        containers_group.add_to(m)
+        logger.info("Capa de contenedores de ropa añadida.")
 
     def _create_popup_html(self, camera: Camera, lat: float, lon: float, color: str) -> str:
         """Helper para crear el HTML del popup."""
