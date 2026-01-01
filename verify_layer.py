@@ -8,65 +8,47 @@ import sys
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("VerifyLayer")
 
-CONSULATES_URL = "https://datosabiertos.malaga.eu/recursos/urbanismoEInfraestructura/equipamientos/da_consulados-4326.geojson"
-
-COUNTRY_FLAGS = {
-    'Costa Rica': 'cr', 'Ecuador': 'ec', 'Mónaco': 'mc', 'Turquía': 'tr', 
-    'Panamá': 'pa', 'Paraguay': 'py', 'Arabia Saudi': 'sa', 'Dinamarca': 'dk', 
-    'Armenia': 'am', 'Austria': 'at', 'Canadá': 'ca', 'Chile': 'cl', 
-    'Eslovaquia': 'sk', 'Filipinas': 'ph', 'Finlandia': 'fi', 'Francia': 'fr', 
-    'Hungría': 'hu', 'Luxemburgo': 'lu', 'Portugal': 'pt', 'Suecia': 'se', 
-    'Ucrania': 'ua', 'Uruguay': 'uy', 'Alemania': 'de', 'Brasil': 'br', 
-    'Albania': 'al', 'Reino Unido': 'gb', 'Polonia': 'pl', 'Italia': 'it'
-}
+BIKE_LANES_URL = "https://datosabiertos.malaga.eu/recursos/urbanismoEInfraestructura/equipamientos/da_carrilesBici-4326.geojson"
 
 def test_fetches_and_creates_layer():
-    logger.info("Testing fetch of Consulates...")
+    logger.info("Testing fetch of Bike Lanes...")
     try:
-        response = requests.get(CONSULATES_URL, timeout=10)
+        response = requests.get(BIKE_LANES_URL, timeout=10)
         response.raise_for_status()
         data = response.json()
         
         feature_count = len(data.get('features', []))
-        logger.info(f"Fetched {feature_count} Consulates features.")
+        logger.info(f"Fetched {feature_count} Bike Lane features.")
         
         m = folium.Map(location=[36.721274, -4.421399], zoom_start=13)
         
-        consulates_group = folium.FeatureGroup(name="🏳️ Consulados", show=False)
+        bike_group = folium.FeatureGroup(name="🚲 Carriles Bici", show=False)
         
-        processed_count = 0
-        for feature in data.get('features', []):
-            props = feature.get('properties', {})
-            geometry = feature.get('geometry', {})
-            if not geometry or geometry.get('type') != 'Point':
-                continue
-                
-            lat, lon = geometry.get('coordinates')[1], geometry.get('coordinates')[0]
-            name = props.get('TOOLTIP', '') or props.get('NOMBRE', 'Consulado')
-            
-            # Determine flag
-            iso_code = 'un' # United Nations / Default
-            for key, code in COUNTRY_FLAGS.items():
-                if key.lower() in name.lower():
-                    iso_code = code
-                    break
-            
-            # Count how many we successfully mapped
-            if iso_code != 'un':
-                processed_count += 1
-                
-            icon_url = f"https://flagcdn.com/w40/{iso_code}.png"
-            
-            # Partial check logic
-            folium.Marker(
-                location=[lat, lon],
-                tooltip=name
-            ).add_to(consulates_group)
+        folium.GeoJson(
+            data,
+            name="Carriles Bici",
+            style_function=lambda feature: {
+                'color': '#3498db',
+                'weight': 3,
+                'opacity': 0.8
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['NOMBRE', 'DESCRIPCION'],
+                aliases=['Tramo:', 'Info:'],
+                localize=True
+            ),
+            popup=folium.GeoJsonPopup(
+                fields=['NOMBRE', 'DESCRIPCION', 'LONGITUDTOTAL'],
+                aliases=['Tramo', 'Descripción', 'Longitud (m)'],
+                localize=True,
+                max_width=300
+            )
+        ).add_to(bike_group)
         
-        consulates_group.add_to(m)
-        logger.info(f"Layer added successfully. Mapped flags for {processed_count}/{feature_count} consulates.")
+        bike_group.add_to(m)
+        logger.info("Layer added successfully.")
         
-        output_file = "test_consulates_map.html"
+        output_file = "test_bike_lanes_map.html"
         m.save(output_file)
         logger.info(f"Map saved to {output_file}")
         

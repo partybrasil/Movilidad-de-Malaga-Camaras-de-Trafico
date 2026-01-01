@@ -24,6 +24,14 @@ import config
 TRAFFIC_CUTS_URL = "https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_cortesTrafico-4326.geojson"
 CLOTHING_CONTAINERS_URL = "https://datosabiertos.malaga.eu/recursos/ambiente/contenedores/da_medioAmbiente_contenedoresRopa-4326.geojson"
 CONSULATES_URL = "https://datosabiertos.malaga.eu/recursos/urbanismoEInfraestructura/equipamientos/da_consulados-4326.geojson"
+BIKE_LANES_URL = "https://datosabiertos.malaga.eu/recursos/urbanismoEInfraestructura/equipamientos/da_carrilesBici-4326.geojson"
+EMT_STOPS_URL = "https://datosabiertos.malaga.eu/recursos/transporte/EMT/EMTLineasYParadas/lineasyparadas.geojson"
+PARKING_URL = "https://datosabiertos.malaga.eu/recursos/aparcamientos/ubappublicosmun/da_aparcamientosPublicosMunicipales-4326.geojson"
+DEFIBR_URL = "https://datosabiertos.malaga.eu/dataset/a455c822-e695-4fc4-abc9-b18f50a59a3a/resource/467c375a-8a74-40d7-a765-d5d160e13fe3/download/da_desfibriladores-4326.geojson"
+FOUNTAINS_URL = "https://datosabiertos.malaga.eu/recursos/ambiente/fuentesaguapotable/da_medioAmbiente_fuentes-4326.geojson"
+WIFI_URL = "https://datosabiertos.malaga.eu/recursos/urbanismoEInfraestructura/sedesWifi/da_sedesWifi-4326.geojson"
+DOG_PARKS_URL = "https://datosabiertos.malaga.eu/recursos/ambiente/parquesCaninos/da_parquesCaninos-4326.geojson"
+# TAXIS_URL = "https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_paradasTaxi-4326.geojson" # Currently failing
 
 # Mapping for flags (Name fragment -> ISO code)
 COUNTRY_FLAGS = {
@@ -165,6 +173,21 @@ class MapGenerationWorker(QObject):
                 self._add_consulates_layer(m)
             except Exception as e:
                 logger.error(f"Error añadiendo capa de consulados: {e}")
+
+            # --- Añadir capa de Carriles Bici ---
+            try:
+                self._add_bike_lanes_layer(m)
+            except Exception as e:
+                logger.error(f"Error añadiendo capa de carriles bici: {e}")
+
+            # --- Capas Bulk (Aparcamientos, Wifi, etc.) ---
+            self._add_bulk_layers(m)
+
+            # --- Capa EMT (Custom) ---
+            try:
+                self._add_emt_layer(m)
+            except Exception as e:
+                logger.error(f"Error añadiendo capa EMT: {e}")
 
             # Añadir controles y scripts
             folium.LayerControl().add_to(m)
@@ -327,6 +350,207 @@ class MapGenerationWorker(QObject):
         
         consulates_group.add_to(m)
         logger.info("Capa de consulados añadida.")
+
+    def _add_bike_lanes_layer(self, m):
+        """Descarga y añade la capa de carriles bici."""
+        logger.info("Descargando datos de carriles bici...")
+        response = requests.get(BIKE_LANES_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Grupo para carriles bici
+        bike_group = folium.FeatureGroup(name="🚲 Carriles Bici", show=False)
+        
+        folium.GeoJson(
+            data,
+            name="Carriles Bici",
+            style_function=lambda feature: {
+                'color': '#3498db',
+                'weight': 3,
+                'opacity': 0.8
+            },
+            tooltip=folium.GeoJsonTooltip(
+                fields=['NOMBRE', 'DESCRIPCION'],
+                aliases=['Tramo:', 'Info:'],
+                localize=True
+            ),
+            popup=folium.GeoJsonPopup(
+                fields=['NOMBRE', 'DESCRIPCION', 'LONGITUDTOTAL'],
+                aliases=['Tramo', 'Descripción', 'Longitud (m)'],
+                localize=True,
+                max_width=300
+            )
+        ).add_to(bike_group)
+        
+        bike_group.add_to(m)
+        logger.info("Capa de carriles bici añadida.")
+
+    def _add_emt_layer(self, m):
+        """Descarga e implementa la capa de paradas de la EMT (Estructura compleja)."""
+        logger.info("Descargando datos EMT...")
+        try:
+            response = requests.get(EMT_STOPS_URL, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            
+            # La EMT devuelve una lista de líneas, cada una con 'paradas'
+            if not isinstance(data, list):
+                logger.warning("Formato EMT inesperado (no es lista).")
+                return
+
+            emt_group = folium.FeatureGroup(name="🚌 EMT (Bus)", show=False)
+            
+            # Diccionario para agregar líneas por parada
+            stops_data = {}
+            
+            for linea in data:
+                # Obtener código de línea limpio (sin puntos)
+                raw_cod = str(linea.get('userCodLinea', linea.get('codLinea', '?')))
+                linea_cod = raw_cod.replace('.', '')
+                
+                paradas = linea.get('paradas', [])
+                
+                for item in paradas:
+                    parada_info = item.get('parada', {})
+                    if not parada_info:
+                        continue
+
+                    stop_cod = parada_info.get('codParada')
+                    
+                    if stop_cod not in stops_data:
+                        lat = parada_info.get('latitud')
+                        lon = parada_info.get('longitud')
+                        
+                        if lat is None or lon is None:
+                            continue
+
+                        stops_data[stop_cod] = {
+                            'name': parada_info.get('nombreParada', 'Parada'),
+                            'address': parada_info.get('direccion', ''),
+                            'lat': lat,
+                            'lon': lon,
+                            'lines': set()
+                        }
+                    
+                    stops_data[stop_cod]['lines'].add(linea_cod)
+
+            # Crear marcadores para cada parada única
+            for stop_cod, info in stops_data.items():
+                lines_str = ", ".join(sorted(info['lines'], key=lambda x: (len(x), x)))
+                
+                popup_html = f"""
+                <div style="font-family: Arial; min-width: 200px;">
+                    <b>🚏 {info['name']}</b><br>
+                    <span style="font-size: 12px; color: #666;">ID: {stop_cod}</span><br>
+                    <hr style="margin: 5px 0;">
+                    📍 {info['address']}<br>
+                    <div style="margin-top:5px;">
+                        <b>Autobuses:</b><br>
+                        <span style="color: blue; font-weight: bold;">{lines_str}</span>
+                    </div>
+                </div>
+                """
+                
+                folium.Marker(
+                    location=[info['lat'], info['lon']],
+                    icon=folium.Icon(icon='bus', prefix='fa', color='blue'),
+                    popup=folium.Popup(popup_html, max_width=250),
+                    tooltip=f"Parada {info['name']}"
+                ).add_to(emt_group)
+
+            emt_group.add_to(m)
+            logger.info(f"Capa EMT añadida ({len(added_stops)} paradas únicas).")
+            
+        except Exception as e:
+            logger.error(f"Error procesando EMT: {e}")
+
+    def _add_bulk_layers(self, m):
+        """Añade capas genéricas definidas en configuración."""
+        layers_config = [
+            {
+                'name': "🅿️ Aparcamientos",
+                'url': PARKING_URL,
+                'icon': 'parking',
+                'color': 'darkblue',
+                'fields': ['name', 'address', 'description', 'availabilitydefault'],
+                'aliases': ['Nombre', 'Dirección', 'Info', 'Plazas']
+            },
+            {
+                'name': "🏥 Desfibriladores",
+                'url': DEFIBR_URL,
+                'icon': 'heartbeat',
+                'color': 'red',
+                'fields': ['nombre', 'direccion', 'horarios', 'descripcion'],
+                'aliases': ['Ubicación', 'Dirección', 'Horario', 'Info']
+            },
+            {
+                'name': "🚰 Fuentes",
+                'url': FOUNTAINS_URL,
+                'icon': 'tint',
+                'color': 'cadetblue',
+                'fields': ['nombre'],
+                'aliases': ['Fuente']
+            },
+            {
+                'name': "📡 Wifi",
+                'url': WIFI_URL,
+                'icon': 'wifi',
+                'color': 'purple',
+                'fields': ['TOOLTIP', 'FINALIDAD'],
+                'aliases': ['Punto Wifi', 'Ubicación']
+            },
+            {
+                'name': "🐕 Parques Caninos",
+                'url': DOG_PARKS_URL,
+                'icon': 'paw',
+                'color': 'darkgreen',
+                'fields': ['NOMBRE', 'DIRECCION', 'HORARIOS'],
+                'aliases': ['Parque', 'Dirección', 'Horario']
+            }
+        ]
+
+        for config in layers_config:
+            try:
+                self._add_generic_layer(m, config)
+            except Exception as e:
+                logger.error(f"Error capa {config['name']}: {e}")
+
+    def _add_generic_layer(self, m, config):
+        logger.info(f"Descargando {config['name']}...")
+        response = requests.get(config['url'], timeout=10)
+        # Handle HTML responses or empty
+        if not response.ok:
+            logger.warning(f"Error HTTP {response.status_code} para {config['name']}")
+            return
+
+        try:
+            data = response.json()
+        except:
+            logger.warning(f"Respuesta no válida para {config['name']}")
+            return
+
+        group = folium.FeatureGroup(name=config['name'], show=False)
+        
+        folium.GeoJson(
+            data,
+            name=config['name'],
+            marker=folium.Marker(
+                icon=folium.Icon(icon=config['icon'], prefix='fa', color=config['color'])
+            ),
+             popup=folium.GeoJsonPopup(
+                fields=config['fields'],
+                aliases=config['aliases'],
+                localize=True,
+                max_width=300
+            ) if 'fields' in config else None,
+            tooltip=folium.GeoJsonTooltip(
+                fields=[config['fields'][0]],
+                localize=True
+            ) if 'fields' in config else None
+        ).add_to(group)
+        
+        group.add_to(m)
+        logger.info(f"Capa {config['name']} añadida.")
 
     def _create_popup_html(self, camera: Camera, lat: float, lon: float, color: str) -> str:
         """Helper para crear el HTML del popup."""
