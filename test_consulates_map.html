@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_84adc431dba1d51c6aedb09dbfaf5263 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_84adc431dba1d51c6aedb09dbfaf5263" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_84adc431dba1d51c6aedb09dbfaf5263 = L.map(
+                "map_84adc431dba1d51c6aedb09dbfaf5263",
+                {
+                    center: [36.721274, -4.421399],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_2a83bac344644909581becb8d6d4722c = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_2a83bac344644909581becb8d6d4722c.addTo(map_84adc431dba1d51c6aedb09dbfaf5263);
+        
+    
+            var feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var marker_cd38064a0928a4b944224898133b4cf4 = L.marker(
+                [36.71370991, -4.43449],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_cd38064a0928a4b944224898133b4cf4.bindTooltip(
+                `<div>
+                     Consulado de la República Federal de Alemania.
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_ea6c61058ce15e49e5ecbb21ee053b68 = L.marker(
+                [36.71370991, -4.43449],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_ea6c61058ce15e49e5ecbb21ee053b68.bindTooltip(
+                `<div>
+                     Consulado General del Reino de  Arabia Saudi
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_8e6851fdbd23416ac8b2cecdf8daefc8 = L.marker(
+                [36.71405991, -4.42451],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_8e6851fdbd23416ac8b2cecdf8daefc8.bindTooltip(
+                `<div>
+                     Consulado de Austria
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_2365ae73cb09f5fd2b445109ffa5740a = L.marker(
+                [36.71845991, -4.40975],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_2365ae73cb09f5fd2b445109ffa5740a.bindTooltip(
+                `<div>
+                     Consulado de la República Federal de Brasil
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_9a5c43a564cb8aae6093108ad2d01c77 = L.marker(
+                [36.71841991, -4.4095],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_9a5c43a564cb8aae6093108ad2d01c77.bindTooltip(
+                `<div>
+                     Consulado de Canadá
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_a4099aad5c5d3bb94d2b68a95719368a = L.marker(
+                [36.72193991, -4.42103],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_a4099aad5c5d3bb94d2b68a95719368a.bindTooltip(
+                `<div>
+                     Consulado de Chile
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_a917c138a4cce38efebb809e5dc312be = L.marker(
+                [36.71788991, -4.43193],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_a917c138a4cce38efebb809e5dc312be.bindTooltip(
+                `<div>
+                     Consulado General de Ecuador en Málaga
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_1a0b8a58cc51855b97fdcd057cb89095 = L.marker(
+                [36.71582991, -4.42234],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_1a0b8a58cc51855b97fdcd057cb89095.bindTooltip(
+                `<div>
+                     Consulado de Finlandia
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_a32e435777c000bc7a28972ec4dd37c0 = L.marker(
+                [36.71917991, -4.42231],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_a32e435777c000bc7a28972ec4dd37c0.bindTooltip(
+                `<div>
+                     Consulado de Luxemburgo
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_de319417f79ddbcf08ca111a8a2a53a4 = L.marker(
+                [36.72052991, -4.4223],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_de319417f79ddbcf08ca111a8a2a53a4.bindTooltip(
+                `<div>
+                     Consulado General de Mónaco
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_d85032091c687f4b83b90c66704bda5d = L.marker(
+                [36.70761991, -4.44794],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_d85032091c687f4b83b90c66704bda5d.bindTooltip(
+                `<div>
+                     Consulado General de la República de Panamá
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_96b2b4888784d0b767fb359b3ee1276d = L.marker(
+                [36.71370991, -4.43449],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_96b2b4888784d0b767fb359b3ee1276d.bindTooltip(
+                `<div>
+                     Consulado del Reino Unido de Gran Bretaña e Irlanda del Norte
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_1b43bc4aef1438a7d617827bd3649b48 = L.marker(
+                [36.71405991, -4.42451],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_1b43bc4aef1438a7d617827bd3649b48.bindTooltip(
+                `<div>
+                     Consulado de Suecia
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_c753dc82aef912fd2585115b4fbe2545 = L.marker(
+                [36.71654991, -4.42221],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_c753dc82aef912fd2585115b4fbe2545.bindTooltip(
+                `<div>
+                     Consulado Real de Dinamarca
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_f8e9f378e11ac10b265a792420df3ef1 = L.marker(
+                [36.71968991, -4.40869],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_f8e9f378e11ac10b265a792420df3ef1.bindTooltip(
+                `<div>
+                     Consulado de Ucrania
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_c4b26d196504993ec8d732a70bcb16c3 = L.marker(
+                [36.71709991, -4.42332],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_c4b26d196504993ec8d732a70bcb16c3.bindTooltip(
+                `<div>
+                     Consulado General de la República de Paraguay
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_5ff4c7b553a4ef3e3e9429966462f894 = L.marker(
+                [36.71920991, -4.41896],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_5ff4c7b553a4ef3e3e9429966462f894.bindTooltip(
+                `<div>
+                     Consulado honorario de Polonia
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_fb0ab8a6997c69f1f820a83086b5805b = L.marker(
+                [36.71795991, -4.42431],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_fb0ab8a6997c69f1f820a83086b5805b.bindTooltip(
+                `<div>
+                     Viceconsulado Honorario de Italia
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_6e611f8c9278963c01340aff2cc4bda1 = L.marker(
+                [36.72233991, -4.41874],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_6e611f8c9278963c01340aff2cc4bda1.bindTooltip(
+                `<div>
+                     Consulado de Francia
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_2d1f40515b1daed8536aaf2478d1b289 = L.marker(
+                [36.70157991, -4.43554],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_2d1f40515b1daed8536aaf2478d1b289.bindTooltip(
+                `<div>
+                     Consulado de la República de Albania
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_9ff87b358c2fc9c476f50f4542691442 = L.marker(
+                [36.71559991, -4.42361],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_9ff87b358c2fc9c476f50f4542691442.bindTooltip(
+                `<div>
+                     Consulado de Eslovaquia en Andalucía.
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_fd657ba4fd389070f66ad9b39e7175ca = L.marker(
+                [36.70135991, -4.43569],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_fd657ba4fd389070f66ad9b39e7175ca.bindTooltip(
+                `<div>
+                     Consulado de Portugal
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_a7fa41633130d6d66e3d08b1bc8af396 = L.marker(
+                [36.72440991, -4.41581],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_a7fa41633130d6d66e3d08b1bc8af396.bindTooltip(
+                `<div>
+                     Consulado General de Costa Rica
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_cda407b020aaee7f5f4f6ac6b784ebe3 = L.marker(
+                [36.71930991, -4.42249],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_cda407b020aaee7f5f4f6ac6b784ebe3.bindTooltip(
+                `<div>
+                     Consulado de Filipinas
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_cc9f6994ce4beffb904d15b02126fab8 = L.marker(
+                [36.72454991, -4.36773],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_cc9f6994ce4beffb904d15b02126fab8.bindTooltip(
+                `<div>
+                     Consulado de Uruguay
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_a67b8423b514c173062f56f736329b8e = L.marker(
+                [36.71939991, -4.42077],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_a67b8423b514c173062f56f736329b8e.bindTooltip(
+                `<div>
+                     Consulado General de Turquía en Málaga
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_c9272d849387d13d05a79eb35cc0f02a = L.marker(
+                [36.66616991, -4.48176],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_c9272d849387d13d05a79eb35cc0f02a.bindTooltip(
+                `<div>
+                     Consulado de Hungría en Andalucía.
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var marker_69446b06f3c413daa63fa1220c3f8614 = L.marker(
+                [36.72033991, -4.4765],
+                {
+}
+            ).addTo(feature_group_cde8fb6b55d8c0c6c4fadbb960a1d7da);
+        
+    
+            marker_69446b06f3c413daa63fa1220c3f8614.bindTooltip(
+                `<div>
+                     Consulado de Armenia
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+</script>
+</html>

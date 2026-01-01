@@ -23,6 +23,18 @@ import config
 
 TRAFFIC_CUTS_URL = "https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_cortesTrafico-4326.geojson"
 CLOTHING_CONTAINERS_URL = "https://datosabiertos.malaga.eu/recursos/ambiente/contenedores/da_medioAmbiente_contenedoresRopa-4326.geojson"
+CONSULATES_URL = "https://datosabiertos.malaga.eu/recursos/urbanismoEInfraestructura/equipamientos/da_consulados-4326.geojson"
+
+# Mapping for flags (Name fragment -> ISO code)
+COUNTRY_FLAGS = {
+    'Costa Rica': 'cr', 'Ecuador': 'ec', 'Mónaco': 'mc', 'Turquía': 'tr', 
+    'Panamá': 'pa', 'Paraguay': 'py', 'Arabia Saudi': 'sa', 'Dinamarca': 'dk', 
+    'Armenia': 'am', 'Austria': 'at', 'Canadá': 'ca', 'Chile': 'cl', 
+    'Eslovaquia': 'sk', 'Filipinas': 'ph', 'Finlandia': 'fi', 'Francia': 'fr', 
+    'Hungría': 'hu', 'Luxemburgo': 'lu', 'Portugal': 'pt', 'Suecia': 'se', 
+    'Ucrania': 'ua', 'Uruguay': 'uy', 'Alemania': 'de', 'Brasil': 'br', 
+    'Albania': 'al', 'Reino Unido': 'gb', 'Polonia': 'pl', 'Italia': 'it'
+}
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +160,12 @@ class MapGenerationWorker(QObject):
             except Exception as e:
                 logger.error(f"Error añadiendo capa de contenedores de ropa: {e}")
 
+            # --- Añadir capa de Consulados ---
+            try:
+                self._add_consulates_layer(m)
+            except Exception as e:
+                logger.error(f"Error añadiendo capa de consulados: {e}")
+
             # Añadir controles y scripts
             folium.LayerControl().add_to(m)
             
@@ -251,6 +269,64 @@ class MapGenerationWorker(QObject):
         
         containers_group.add_to(m)
         logger.info("Capa de contenedores de ropa añadida.")
+
+    def _add_consulates_layer(self, m):
+        """Descarga y añade la capa de consulados con banderas."""
+        logger.info("Descargando datos de consulados...")
+        response = requests.get(CONSULATES_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Grupo para consulados
+        consulates_group = folium.FeatureGroup(name="🏳️ Consulados", show=False)
+        
+        for feature in data.get('features', []):
+            try:
+                props = feature.get('properties', {})
+                geometry = feature.get('geometry', {})
+                if not geometry or geometry.get('type') != 'Point':
+                    continue
+                    
+                lat, lon = geometry.get('coordinates')[1], geometry.get('coordinates')[0]
+                name = props.get('TOOLTIP', '') or props.get('NOMBRE', 'Consulado')
+                
+                # Determine flag
+                iso_code = 'un' # United Nations / Default
+                for key, code in COUNTRY_FLAGS.items():
+                    if key.lower() in name.lower():
+                        iso_code = code
+                        break
+                        
+                # Custom Icon with Flag
+                icon_url = f"https://flagcdn.com/w40/{iso_code}.png"
+                
+                popup_html = f"""
+                <div style="font-family: Arial; min-width: 200px;">
+                    <h4 style="margin: 0 0 8px 0;">{name}</h4>
+                    <img src="{icon_url}" style="width: 30px; border: 1px solid #ccc; margin-bottom: 8px;">
+                    <p style="margin: 4px 0;"><strong>Dirección:</strong><br>{props.get('DIRECCION', 'N/D')}</p>
+                    <p style="margin: 4px 0;"><strong>Info:</strong><br>{props.get('FINALIDAD', '')}</p>
+                </div>
+                """
+                
+                folium.Marker(
+                    location=[lat, lon],
+                    popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=name,
+                    icon=folium.CustomIcon(
+                        icon_image=icon_url,
+                        icon_size=(30, 20),
+                        icon_anchor=(15, 10),
+                        popup_anchor=(0, -10)
+                    )
+                ).add_to(consulates_group)
+                
+            except Exception as e:
+                logger.warning(f"Error procesando consulado: {e}")
+                continue
+        
+        consulates_group.add_to(m)
+        logger.info("Capa de consulados añadida.")
 
     def _create_popup_html(self, camera: Camera, lat: float, lon: float, color: str) -> str:
         """Helper para crear el HTML del popup."""
