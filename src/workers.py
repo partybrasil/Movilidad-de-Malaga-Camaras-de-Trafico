@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 from typing import List, Optional, Tuple
 import tempfile
+import json
+import requests
 import folium
 from folium import plugins
 
@@ -18,6 +20,8 @@ from src.models.camera import Camera
 from src.utils.data_loader import DataLoader
 from src.utils.coordinate_converter import get_converter
 import config
+
+TRAFFIC_CUTS_URL = "https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_cortesTrafico-4326.geojson"
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +135,12 @@ class MapGenerationWorker(QObject):
                     )
                 ).add_to(marker_cluster)
             
+            # --- Añadir capa de Cortes de Tráfico ---
+            try:
+                self._add_traffic_cuts_layer(m)
+            except Exception as e:
+                logger.error(f"Error añadiendo capa de cortes de tráfico: {e}")
+
             # Añadir controles y scripts
             folium.LayerControl().add_to(m)
             
@@ -154,7 +164,57 @@ class MapGenerationWorker(QObject):
         except Exception as e:
             logger.error(f"Error generando mapa en thread: {e}", exc_info=True)
             self.error.emit(str(e))
+
+    def _add_traffic_cuts_layer(self, m):
+        """Descarga y añade la capa de cortes de tráfico."""
+        logger.info("Descargando datos de cortes de tráfico...")
+        response = requests.get(TRAFFIC_CUTS_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Grupo para cortes de tráfico
+        cuts_group = folium.FeatureGroup(name="⚠️ Cortes de Tráfico", show=True)
+        
+        def style_function(feature):
+            props = feature.get('properties', {})
+            tipo = props.get('TIPOAFECTACION', '')
             
+            color = 'red' if 'Corte' in tipo else 'orange'
+            return {
+                'fillColor': color,
+                'color': color,
+                'weight': 2,
+                'fillOpacity': 0.6
+            }
+            
+        def highlight_function(feature):
+            return {
+                'weight': 4,
+                'fillOpacity': 0.8
+            }
+
+        folium.GeoJson(
+            data,
+            name="Cortes de Tráfico",
+            style_function=style_function,
+            highlight_function=highlight_function,
+            tooltip=folium.GeoJsonTooltip(
+                fields=['DIRECCION', 'TIPOAFECTACION', 'DESDE', 'HASTA'],
+                aliases=['📍 Ubicación:', '⚠️ Tipo:', '📅 Desde:', '📅 Hasta:'],
+                localize=True
+            ),
+            popup=folium.GeoJsonPopup(
+                fields=['NOMBRE', 'DESCRIPCION', 'DIRECCION', 'TIPOAFECTACION', 'TIPOCORTE', 'DESDE', 'HASTA', 'NOTAS'],
+                aliases=['Nombre', 'Descripción', 'Dirección', 'Afectación', 'Tipo', 'Inicio', 'Fin', 'Notas'],
+                localize=True,
+                max_width=300
+            ),
+            marker=folium.Marker(icon=folium.Icon(icon='exclamation-triangle', prefix='fa', color='red'))
+        ).add_to(cuts_group)
+        
+        cuts_group.add_to(m)
+        logger.info("Capa de cortes de tráfico añadida.")
+
     def _create_popup_html(self, camera: Camera, lat: float, lon: float, color: str) -> str:
         """Helper para crear el HTML del popup."""
         return f"""
